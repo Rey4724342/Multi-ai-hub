@@ -31,25 +31,26 @@
         button.send-btn:hover { background: #0369a1; }
 
         .footer { text-align: center; font-size: 10px; color: #64748b; padding: 5px; background: #020617; }
-        .lock-screen { text-align: center; padding: 50px 20px; margin: auto; }
-        .lock-screen input { padding: 10px; width: 80%; background: #0f172a; color: #fff; border: 1px solid #334155; border-radius: 6px; font-family: monospace; margin-top: 10px; text-align: center; }
-        .lock-screen button { padding: 10px 20px; background: #0284c7; border: none; color: #fff; border-radius: 6px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        
+        /* Lock Screen */
+        .lock-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px; text-align: center; }
+        .lock-screen input { padding: 12px; width: 80%; max-width: 300px; background: #0f172a; color: #fff; border: 1px solid #334155; border-radius: 6px; font-family: monospace; margin-top: 15px; text-align: center; }
+        .lock-screen button { padding: 12px 25px; background: #0284c7; border: none; color: #fff; border-radius: 6px; font-weight: bold; margin-top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- LAYAR LOCK / PASSWORD -->
         <div id="lockSection" class="lock-screen">
-            <h3 style="color: #ef4444; margin-top: 0;">[SYSTEM LOCKED🔒]</h3>
-            <p style="font-size: 12px; color: #94a3b8;">Masukkan kunci autentikasi sistem:</p>
-            <input type="password" id="keyInput" placeholder="Masukkan Password" />
-            <br>
+            <h3 style="color: #ef4444; margin-top: 0; font-size: 22px;">[SYSTEM LOCKED🔒]</h3>
+            <p style="font-size: 12px; color: #94a3b8;">Masukkan kunci autentikasi sistem untuk mengakses Quantum V14.0:</p>
+            <input type="password" id="keyInput" placeholder="Masukkan Password" onkeydown="handleLoginEnter(event)" />
             <button onclick="checkKey()">AUTENTIKASI</button>
             <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px;"></p>
         </div>
 
-        <!-- UTAMA (CHAT INTERFACE) -->
-        <div id="mainSection" style="display: none; display: flex; flex-direction: column; height: 100%;">
+        <!-- UTAMA (CHAT INTERFACE) - DISET DISPLAY NONE SUPAYA AMAN -->
+        <div id="mainSection" style="display: none; flex-direction: column; height: 100%;">
             <div class="header-box">
                 <h2>🔥 Quantum V14.0 Hub 🔥</h2>
                 <div class="banner">━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -78,7 +79,7 @@
 
             <!-- Input Box -->
             <div class="input-box">
-                <textarea id="promptInput" placeholder="Ketik perintah di sini..." onkeydown="handleEnter(event)"></textarea>
+                <textarea id="promptInput" placeholder="Ketik perintah di sini..." onkeydown="handleChatEnter(event)"></textarea>
                 <button id="sendBtn" class="send-btn" onclick="sendPrompt()">KIRIM</button>
             </div>
         </div>
@@ -97,11 +98,17 @@
                 document.getElementById('lockSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'flex';
             } else {
-                errorMsg.innerText = "Kode Salah!";
+                errorMsg.innerText = "Kode Salah, bray! Akses ditolak.";
             }
         }
 
-        function handleEnter(e) {
+        function handleLoginEnter(e) {
+            if (e.key === 'Enter') {
+                checkKey();
+            }
+        }
+
+        function handleChatEnter(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendPrompt();
@@ -126,7 +133,6 @@
             
             if (!userPrompt) return;
 
-            // Tampilkan pesan User ke riwayat chat
             const userMsgDiv = document.createElement('div');
             userMsgDiv.className = 'message user-msg';
             userMsgDiv.innerText = userPrompt;
@@ -135,7 +141,6 @@
             promptInput.value = '';
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Buat kotak pesan AI kosong untuk efek streaming / loading
             const aiMsgDiv = document.createElement('div');
             aiMsgDiv.className = 'message ai-msg';
             aiMsgDiv.innerHTML = `<div class="msg-header"><span>${model.toUpperCase()}</span><span>© Rey472</span></div><span style="color: #38bdf8;">Mengeksekusi perintah...</span>`;
