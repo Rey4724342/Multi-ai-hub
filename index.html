@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum PlayStore AI Hub</title>
+    <title>Quantum Ultimate AI Hub</title>
     <style>
         body { background: #0f172a; color: #f8fafc; font-family: monospace; margin: 0; padding: 15px; }
         .container { max-width: 650px; margin: auto; background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
@@ -18,26 +18,25 @@
 </head>
 <body>
     <div class="container">
-        <h2>🔥 Quantum PlayStore AI Hub 🔥</h2>
-        <p class="sub">Koleksi AI Play Store dalam Satu Web</p>
+        <h2>🔥 Quantum Ultimate AI Hub 🔥</h2>
+        <p class="sub">Semua AI Play Store dalam Satu Web</p>
         
-        <label>Pilih Aplikasi AI:</label>
+        <label>Pilih Model AI:</label>
         <select id="modelSelect">
             <option value="openai">ChatGPT (Official OpenAI)</option>
             <option value="gemini">Google Gemini</option>
             <option value="claude">Claude by Anthropic</option>
-            <option value="deepseek">DeepSeek - AI Assistant</option>
+            <option value="deepseek">DeepSeek AI</option>
             <option value="copilot">Microsoft Copilot</option>
             <option value="grok">Grok (xAI)</option>
-            <option value="llama">Meta AI / Llama</option>
-            <option value="blackbox">Blackbox AI (Coding Assistant)</option>
-            <option value="perplexity">Perplexity - AI Search</option>
+            <option value="llama">Meta Llama</option>
+            <option value="perplexity">Perplexity AI</option>
         </select>
         
         <label>Prompt / Pertanyaan:</label>
         <textarea id="promptInput" rows="4" placeholder="Ketik apa aja di sini, bray..."></textarea>
         
-        <button onclick="sendPrompt()">KIRIM PERINTAH</button>
+        <button onclick="sendPrompt()">KIRIM KE AI</button>
         
         <label>Hasil Respon:</label>
         <div id="outputBox" class="output">Menunggu eksekusi perintah...</div>
@@ -50,20 +49,24 @@
             const outputBox = document.getElementById('outputBox');
             
             if (!prompt) {
-                alert('Isi dulu prompt-nya, babi!');
+                alert('Isi dulu prompt-nya, bray!');
                 return;
             }
 
-            outputBox.innerText = `Menghubungkan ke server AI...`;
+            outputBox.innerText = "Sedang memproses jawaban dari AI...";
 
             try {
-                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}`);
+                // Menggunakan endpoint universal text pollinations agar langsung mengembalikan string teks
+                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}&json=false`);
                 const text = await response.text();
                 
-                if(text) {
+                if (text && text !== "{}") {
                     outputBox.innerText = text;
                 } else {
-                    outputBox.innerText = "Gagal mendapatkan respon dari server.";
+                    // Fallback otomatis jika model spesifik kosong
+                    const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+                    const fallbackText = await fallbackRes.text();
+                    outputBox.innerText = fallbackText || "Gagal memuat respon. Coba lagi.";
                 }
             } catch (err) {
                 outputBox.innerText = "Error koneksi: " + err;
