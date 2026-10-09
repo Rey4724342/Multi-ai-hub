@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Ultimate AI Hub</title>
+    <title>Quantum Fast AI Hub</title>
+    <!-- Library Marked.js buat bikin teks rapi ala AI resmi -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { background: #0f172a; color: #f8fafc; font-family: monospace; margin: 0; padding: 15px; }
         .container { max-width: 650px; margin: auto; background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
@@ -13,33 +15,37 @@
         select, textarea, button { width: 100%; margin-top: 8px; padding: 12px; background: #0f172a; color: #fff; border: 1px solid #334155; border-radius: 6px; font-family: monospace; box-sizing: border-box; }
         button { background: #0284c7; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 15px; transition: 0.2s; }
         button:hover { background: #0369a1; }
-        .output { background: #090d16; padding: 15px; margin-top: 15px; border-radius: 6px; white-space: pre-wrap; min-height: 140px; border: 1px solid #1e293b; font-size: 14px; color: #e2e8f0; }
+        
+        /* Styling Kotak Respon biar rapi dan profesional */
+        .output { background: #090d16; padding: 15px; margin-top: 15px; border-radius: 6px; min-height: 140px; border: 1px solid #1e293b; font-size: 14px; color: #e2e8f0; line-height: 1.6; word-break: break-word; }
+        .output pre { background: #020617; padding: 10px; border-radius: 4px; overflow-x: auto; border: 1px solid #1e293b; }
+        .output code { font-family: monospace; color: #38bdf8; }
+        .output ul, .output ol { padding-left: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🔥 Quantum Ultimate AI Hub 🔥</h2>
-        <p class="sub">Semua AI Play Store dalam Satu Web</p>
+        <h2>🔥 Quantum Fast AI Hub 🔥</h2>
+        <p class="sub">Cepat, Ringan, & Rapi ala AI Resmi</p>
         
         <label>Pilih Model AI:</label>
         <select id="modelSelect">
-            <option value="openai">ChatGPT (Official OpenAI)</option>
+            <option value="openai">ChatGPT (OpenAI)</option>
             <option value="gemini">Google Gemini</option>
-            <option value="claude">Claude by Anthropic</option>
+            <option value="claude">Claude (Anthropic)</option>
             <option value="deepseek">DeepSeek AI</option>
             <option value="copilot">Microsoft Copilot</option>
             <option value="grok">Grok (xAI)</option>
             <option value="llama">Meta Llama</option>
-            <option value="perplexity">Perplexity AI</option>
         </select>
         
         <label>Prompt / Pertanyaan:</label>
-        <textarea id="promptInput" rows="4" placeholder="Ketik apa aja di sini, bray..."></textarea>
+        <textarea id="promptInput" rows="4" placeholder="Ketik perintah di sini, bray..."></textarea>
         
-        <button onclick="sendPrompt()">KIRIM KE AI</button>
+        <button id="sendBtn" onclick="sendPrompt()">KIRIM PERINTAH</button>
         
         <label>Hasil Respon:</label>
-        <div id="outputBox" class="output">Menunggu eksekusi perintah...</div>
+        <div id="outputBox" class="output">Menunggu eksekusi...</div>
     </div>
 
     <script>
@@ -47,29 +53,33 @@
             const model = document.getElementById('modelSelect').value;
             const prompt = document.getElementById('promptInput').value;
             const outputBox = document.getElementById('outputBox');
+            const sendBtn = document.getElementById('sendBtn');
             
             if (!prompt) {
                 alert('Isi dulu prompt-nya, bray!');
                 return;
             }
 
-            outputBox.innerText = "Sedang memproses jawaban dari AI...";
+            outputBox.innerHTML = "<span style='color: #38bdf8;'>Sedang merespon dengan cepat...</span>";
+            sendBtn.disabled = true;
+            sendBtn.innerText = "MEMPROSES...";
 
             try {
-                // Menggunakan endpoint universal text pollinations agar langsung mengembalikan string teks
-                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}&json=false`);
+                // Menggunakan endpoint tercepat tanpa delay
+                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}`);
                 const text = await response.text();
                 
                 if (text && text !== "{}") {
-                    outputBox.innerText = text;
+                    // Otomatis merapikan format teks (Markdown) jadi rapi kayak ChatGPT
+                    outputBox.innerHTML = marked.parse(text);
                 } else {
-                    // Fallback otomatis jika model spesifik kosong
-                    const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
-                    const fallbackText = await fallbackRes.text();
-                    outputBox.innerText = fallbackText || "Gagal memuat respon. Coba lagi.";
+                    outputBox.innerText = "Gagal memuat respon. Coba model lain.";
                 }
             } catch (err) {
-                outputBox.innerText = "Error koneksi: " + err;
+                outputBox.innerText = "Error koneksi jaringan: " + err;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerText = "KIRIM PERINTAH";
             }
         }
     </script>
