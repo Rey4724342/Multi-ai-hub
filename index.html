@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quantum AI V14.0 – Rey472</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://cdnjs.cloudflare.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0b0f17;
@@ -22,7 +22,7 @@
         body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
         /* Lock Screen */
-        .lock-screen { position: fixed; inset: 0; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 999; text-align: center; }
+        #lockSection { position: fixed; inset: 0; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 9999; text-align: center; }
         .lock-box { background: var(--card-bg); padding: 30px 20px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .lock-title { color: #ef4444; font-size: 20px; font-weight: 700; margin-bottom: 8px; font-family: monospace; }
         .lock-input { width: 100%; padding: 12px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 10px; text-align: center; font-size: 14px; margin-top: 15px; outline: none; }
@@ -31,7 +31,7 @@
         .lock-btn:hover { background: #0369a1; }
 
         /* Main Layout */
-        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
+        #mainSection { display: none; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
 
         /* Header App */
         .app-header { background: rgba(19, 27, 46, 0.8); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
@@ -76,18 +76,18 @@
 <body>
 
     <!-- LOCK SCREEN -->
-    <div id="lockSection" class="lock-screen">
+    <div id="lockSection">
         <div class="lock-box">
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
             <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Quantum V14.0 Password Gate</p>
-            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" onkeydown="handleLoginEnter(event)" />
-            <button class="lock-btn" onclick="checkKey()">MASUK</button>
+            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
+            <button class="lock-btn" id="loginBtn">MASUK</button>
             <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
         </div>
     </div>
 
     <!-- MAIN APP INTERFACE -->
-    <div id="mainSection" class="app-container" style="display: none;">
+    <div id="mainSection">
         
         <!-- Header -->
         <div class="app-header">
@@ -105,7 +105,7 @@
                     <option value="gemini">Gemini (Respon Cepat)</option>
                     <option value="mistral">Mistral (Ultra Fast)</option>
                 </select>
-                <button class="icon-btn" onclick="clearChat()" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
+                <button class="icon-btn" id="clearBtn" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </div>
 
@@ -123,8 +123,8 @@
         <!-- Input Floating Bar -->
         <div class="input-bar-container">
             <div class="input-bar">
-                <textarea id="promptInput" rows="1" placeholder="Ketik pesan..." onkeydown="handleChatEnter(event)" oninput="autoExpand(this)"></textarea>
-                <button id="sendBtn" class="send-button" onclick="sendPrompt()"><i class="fa-solid fa-paper-plane"></i></button>
+                <textarea id="promptInput" rows="1" placeholder="Ketik pesan..."></textarea>
+                <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="footer-tag">Quantum V14.0 • Powered by Rey472</div>
         </div>
@@ -134,37 +134,48 @@
     <script>
         const correctKey = "adminrey472";
 
-        function checkKey() {
-            const userKey = document.getElementById('keyInput').value;
+        function triggerLogin() {
+            const userKey = document.getElementById('keyInput').value.trim();
             const errorMsg = document.getElementById('errorMsg');
 
             if (userKey === correctKey) {
                 document.getElementById('lockSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'flex';
             } else {
-                errorMsg.innerText = "Password Salah!";
+                errorMsg.innerText = "Password Salah, bray!";
             }
         }
 
-        function handleLoginEnter(e) {
-            if (e.key === 'Enter') checkKey();
-        }
+        // Pasang event listener langsung setelah dokumen siap agar tombol pasti berfungsi
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.getElementById('loginBtn');
+            const keyInput = document.getElementById('keyInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const promptInput = document.getElementById('promptInput');
 
-        function handleChatEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendPrompt();
+            if (loginBtn) loginBtn.addEventListener('click', triggerLogin);
+            if (keyInput) {
+                keyInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') triggerLogin();
+                });
             }
-        }
 
-        function autoExpand(field) {
-            field.style.height = 'inherit';
-            const computed = window.getComputedStyle(field);
-            const height = parseInt(computed.getPropertyValue('border-top-width'), 10)
-                         + field.scrollHeight
-                         + parseInt(computed.getPropertyValue('border-bottom-width'), 10);
-            field.style.height = Math.min(height, 100) + 'px';
-        }
+            if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
+            if (clearBtn) clearBtn.addEventListener('click', clearChat);
+            if (promptInput) {
+                promptInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendPrompt();
+                    }
+                });
+                promptInput.addEventListener('input', function() {
+                    this.style.height = 'inherit';
+                    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+                });
+            }
+        });
 
         function clearChat() {
             const chatHistory = document.getElementById('chatHistory');
@@ -216,14 +227,42 @@
             const startTime = Date.now();
 
             try {
-                // Endpoint dioptimalkan dengan cache & routing cepat
                 const fastApiUrl = `https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=${model}&cache=true`;
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 detik timeout emergency
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
 
                 const res = await fetch(fastApiUrl, { signal: controller.signal });
                 clearTimeout(timeoutId);
                 responseText = await res.text();
 
                 if (!responseText || responseText.includes("{}")) {
-                    const fallbackRes
+                    const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=openai`);
+                    responseText = await fallbackRes.text();
+                }
+            } catch (err) {
+                try {
+                    const emergencyRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}`);
+                    responseText = await emergencyRes.text();
+                } catch (e) {
+                    responseText = "Error koneksi: Server sedang terlalu padat, coba lagi beberapa detik lagi bray.";
+                }
+            }
+
+            const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+            let finalOutput = (responseText && !responseText.includes("{}")) ? responseText : "Gagal memproses respon dari AI.";
+            
+            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses dalam ${duration} detik | Copyright © Rey472_`;
+
+            const aiContentBox = aiBubble.querySelector('.bubble-content');
+            aiContentBox.innerHTML = marked.parse(formattedResult);
+
+            sendBtn.disabled = false;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
