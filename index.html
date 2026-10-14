@@ -113,7 +113,7 @@
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
             <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Quantum V14.0 Password Gate</p>
             <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
-            <button class="lock-btn" id="loginBtn" onclick="triggerLogin()">MASUK</button>
+            <button class="lock-btn" id="loginBtn" onclick="handleLogin()">MASUK</button>
             <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
         </div>
     </div>
@@ -161,7 +161,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Quantum System v14.0 Authenticated</strong><br>
-                    Sistem API baru terhubung! Pilih model AI di atas dan mulai mengetik, bray!
+                    Sistem siap digunakan, bray! Ketik pesan atau pilih model di atas.
                 </div>
             </div>
         </div>
@@ -207,26 +207,48 @@
         const correctKey = "adminrey472";
         let isVipUser = false;
 
-        function triggerLogin() {
+        // CEK APAKAH SUDAH LOGIN SEBELUMNYA DI BROWSER INI
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('quantum_auth_unlocked') === 'true') {
+                document.getElementById('lockSection').style.display = 'none';
+                document.getElementById('mainSection').style.display = 'flex';
+                checkVipStatus();
+            }
+
+            // Enter key listener pada password input
+            const keyInput = document.getElementById('keyInput');
+            if (keyInput) {
+                keyInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleLogin();
+                    }
+                });
+            }
+
+            // Event handler tombol lain setelah DOM siap
+            setupAppListeners();
+        });
+
+        function handleLogin() {
             const keyInput = document.getElementById('keyInput');
             const errorMsg = document.getElementById('errorMsg');
-            const lockSection = document.getElementById('lockSection');
-            const mainSection = document.getElementById('mainSection');
-
+            
             if (!keyInput) return;
-            const userKey = keyInput.value.trim();
+            const enteredVal = keyInput.value.trim();
 
-            if (userKey === correctKey) {
+            if (enteredVal === correctKey) {
                 localStorage.setItem('quantum_auth_unlocked', 'true');
-                lockSection.style.display = 'none';
-                mainSection.style.display = 'flex';
+                document.getElementById('lockSection').style.display = 'none';
+                document.getElementById('mainSection').style.display = 'flex';
                 checkVipStatus();
             } else {
                 errorMsg.innerText = "Password Salah, bray!";
+                keyInput.value = "";
+                keyInput.focus();
             }
         }
 
-        // GENERATOR KETAT KHUSUS 5 MENIT
+        // GENERATOR TOKEN 5 MENIT
         function generateFiveMinToken() {
             const expireTime = Date.now() + (5 * 60 * 1000);
             const timeCode = expireTime.toString(36).toUpperCase();
@@ -246,7 +268,7 @@
                 const expireTime = parseInt(parts[1], 36);
                 const currentTime = Date.now();
 
-                if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" />;
+                if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" };
 
                 if (currentTime > expireTime) {
                     return { valid: false, reason: "Token VIP 5 Menit Sudah Kadaluwarsa!" };
@@ -283,8 +305,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const keyInput = document.getElementById('keyInput');
+        function setupAppListeners() {
             const sendBtn = document.getElementById('sendBtn');
             const clearBtn = document.getElementById('clearBtn');
             const promptInput = document.getElementById('promptInput');
@@ -294,18 +315,6 @@
             const safelinkModal = document.getElementById('safelinkModal');
             const closeModalText = document.getElementById('closeModalText');
             const activateVipBtn = document.getElementById('activateVipBtn');
-
-            if (localStorage.getItem('quantum_auth_unlocked') === 'true') {
-                document.getElementById('lockSection').style.display = 'none';
-                document.getElementById('mainSection').style.display = 'flex';
-                checkVipStatus();
-            }
-
-            if (keyInput) {
-                keyInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') triggerLogin();
-                });
-            }
 
             if (vipBtn) {
                 vipBtn.addEventListener('click', () => {
@@ -368,9 +377,9 @@
                 recognition.onerror = () => micBtn.classList.remove('active');
                 recognition.onend = () => micBtn.classList.remove('active');
             } else {
-                micBtn.style.display = 'none';
+                if(micBtn) micBtn.style.display = 'none';
             }
-        });
+        }
 
         function usePreset(prefix) {
             const promptInput = document.getElementById('promptInput');
@@ -392,7 +401,6 @@
                 </div>`;
         }
 
-        // KONEKSI MENGGUNAKAN STANDAR OPENAI CHAT COMPLETIONS API POLLINATIONS (STABIL)
         async function fetchAIResponse(promptText, selectedModel) {
             const modelMapping = {
                 'openai': 'openai',
@@ -409,14 +417,10 @@
             try {
                 const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: targetModel,
-                        messages: [
-                            { role: "user", content: promptText }
-                        ]
+                        messages: [{ role: "user", content: promptText }]
                     })
                 });
 
@@ -430,10 +434,9 @@
                     }
                 }
             } catch (e) {
-                console.warn("Chat Completions API error, mencoba metode endpoint alternatif...", e);
+                console.warn("API error, mencoba endpoint alternatif...");
             }
 
-            // Jalur Cadangan (GET Request URL Sederhana)
             try {
                 const encodedPrompt = encodeURIComponent(promptText);
                 const fallbackUrl = `https://text.pollinations.ai/${encodedPrompt}?model=${targetModel}`;
