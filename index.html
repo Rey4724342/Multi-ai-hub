@@ -100,10 +100,11 @@
             </div>
             <div class="header-actions">
                 <select id="modelSelect" class="model-select">
-                    <option value="openai">ChatGPT (Akurat & Cepat)</option>
-                    <option value="deepseek">DeepSeek (Presisi Koding)</option>
-                    <option value="gemini">Gemini (Respon Cepat)</option>
-                    <option value="mistral">Mistral (Ultra Fast)</option>
+                    <option value="openai">ChatGPT (Default)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="llama">Llama 3</option>
+                    <option value="mistral">Mistral</option>
                 </select>
                 <button class="icon-btn" id="clearBtn" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -115,7 +116,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Quantum System v14.0 Ultra Active</strong><br>
-                    Sistem sudah dioptimalkan! Respon lebih kencang & jawaban presisi akurat. Silakan ketik perintah, bray!
+                    Sistem sudah dioptimalkan! Jika satu model padat, sistem akan otomatis pindah ke jalur cadangan. Ketik perintah, bray!
                 </div>
             </div>
         </div>
@@ -146,7 +147,6 @@
             }
         }
 
-        // Pasang event listener langsung setelah dokumen siap agar tombol pasti berfungsi
         document.addEventListener('DOMContentLoaded', () => {
             const loginBtn = document.getElementById('loginBtn');
             const keyInput = document.getElementById('keyInput');
@@ -189,6 +189,36 @@
                 </div>`;
         }
 
+        // Fungsi fetch sakti dengan fallback berantai
+        async function fetchAIResponse(promptText, selectedModel) {
+            const modelsToTry = [selectedModel, 'openai', 'deepseek', 'mistral', 'llama'];
+            // Hapus duplikat
+            const uniqueModels = [...new Set(modelsToTry)];
+
+            for (let model of uniqueModels) {
+                try {
+                    const encodedPrompt = encodeURIComponent(promptText);
+                    const url = `https://text.pollinations.ai/${encodedPrompt}?model=${model}&seed=${Math.floor(Math.random() * 1000000)}`;
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik max per model
+
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    if (response.ok) {
+                        const text = await response.text();
+                        if (text && text.trim() !== "" && text.trim() !== "{}" && !text.includes("I'm sorry, but I can't help with that.")) {
+                            return { text: text, usedModel: model };
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Model ${model} gagal atau timeout, mencoba model berikutnya...`);
+                }
+            }
+            return null; // Jika semua gagal
+        }
+
         async function sendPrompt() {
             const model = document.getElementById('modelSelect').value;
             const promptInput = document.getElementById('promptInput');
@@ -216,42 +246,28 @@
             aiBubble.className = 'chat-bubble ai';
             aiBubble.innerHTML = `
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
-                <div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Memproses secara kencang & presisi...</span></div>
+                <div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Memproses respon...</span></div>
             `;
             chatHistory.appendChild(aiBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
             sendBtn.disabled = true;
-
-            let responseText = "";
             const startTime = Date.now();
 
-            try {
-                const fastApiUrl = `https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=${model}&cache=true`;
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-                const res = await fetch(fastApiUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                responseText = await res.text();
-
-                if (!responseText || responseText.includes("{}")) {
-                    const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=openai`);
-                    responseText = await fallbackRes.text();
-                }
-            } catch (err) {
-                try {
-                    const emergencyRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}`);
-                    responseText = await emergencyRes.text();
-                } catch (e) {
-                    responseText = "Error koneksi: Server sedang terlalu padat, coba lagi beberapa detik lagi bray.";
-                }
-            }
-
+            const result = await fetchAIResponse(userPrompt, model);
             const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-            let finalOutput = (responseText && !responseText.includes("{}")) ? responseText : "Gagal memproses respon dari AI.";
+
+            let finalOutput = "";
+            let usedModelName = model;
+
+            if (result && result.text) {
+                finalOutput = result.text;
+                usedModelName = result.usedModel;
+            } else {
+                finalOutput = "Server AI publik sedang sibuk total saat ini. Coba klik 'KIRIM' sekali lagi atau ganti model pilihan di kanan atas, bray!";
+            }
             
-            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses dalam ${duration} detik | Copyright © Rey472_`;
+            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses (${usedModelName.toUpperCase()}) dalam ${duration} detik | Copyright © Rey472_`;
 
             const aiContentBox = aiBubble.querySelector('.bubble-content');
             aiContentBox.innerHTML = marked.parse(formattedResult);
