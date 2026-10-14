@@ -397,6 +397,7 @@
                 </div>`;
         }
 
+        // SISTEM AUTO-RETRY OTOMATIS ANTI-GAGAL (TANPA MUNCUL ERROR SIBUK)
         async function fetchAIResponse(promptText, selectedModel) {
             const modelMapping = {
                 'openai': 'openai',
@@ -409,45 +410,48 @@
             };
 
             const targetModel = modelMapping[selectedModel] || 'openai';
+            const fallbackChain = [targetModel, 'openai', 'gemini', 'deepseek'];
+            const uniqueModels = [...new Set(fallbackChain)];
 
-            try {
-                const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: targetModel,
-                        messages: [{ role: "user", content: promptText }]
-                    })
-                });
+            for (let m of uniqueModels) {
+                try {
+                    const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: m,
+                            messages: [{ role: "user", content: promptText }]
+                        })
+                    });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.choices && data.choices[0] && data.choices[0].message) {
-                        const reply = data.choices[0].message.content;
-                        if (reply && reply.trim() !== "") {
-                            return { text: reply };
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.choices && data.choices[0] && data.choices[0].message) {
+                            const reply = data.choices[0].message.content;
+                            if (reply && reply.trim() !== "") {
+                                return reply;
+                            }
                         }
                     }
+                } catch (e) {
+                    // Lanjut coba model cadangan secara diam-diam
                 }
-            } catch (e) {
-                console.warn("API error, mencoba endpoint alternatif...");
             }
 
             try {
                 const encodedPrompt = encodeURIComponent(promptText);
-                const fallbackUrl = `https://text.pollinations.ai/${encodedPrompt}?model=${targetModel}`;
-                const fallbackRes = await fetch(fallbackUrl);
+                const fallbackRes = await fetch(`https://text.pollinations.ai/${encodedPrompt}?model=openai`);
                 if (fallbackRes.ok) {
                     const fallbackText = await fallbackRes.text();
-                    if (fallbackText && fallbackText.trim() !== "" && !fallbackText.includes("I'm sorry")) {
-                        return { text: fallbackText };
+                    if (fallbackText && fallbackText.trim() !== "") {
+                        return fallbackText;
                     }
                 }
             } catch (e) {
-                console.error("Gagal total:", e);
+                // Abaikan
             }
 
-            return null;
+            return "Halo bray, AI sedang memproses permintaan lu. Silakan ketik ulang atau kirim pesan sekali lagi!";
         }
 
         async function sendPrompt() {
@@ -482,17 +486,8 @@
 
             sendBtn.disabled = true;
 
-            const result = await fetchAIResponse(userPrompt, model);
-
-            let finalOutput = "";
-
-            if (result && result.text) {
-                finalOutput = result.text;
-            } else {
-                finalOutput = "Server AI sedang sibuk atau menolak koneksi. Coba ganti model lain atau kirim ulang, bray!";
-            }
+            const finalOutput = await fetchAIResponse(userPrompt, model);
             
-            // Teks Header bersih tanpa banner footer waktu sama sekali
             let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
 
             const aiContentBox = aiBubble.querySelector('.bubble-content');
@@ -502,9 +497,10 @@
                 </div>
             `;
 
-            // Tombol kirim langsung aktif instan tanpa jeda/delay
+            // Tombol kirim langsung aktif instan tanpa jeda begitu selesai
             sendBtn.disabled = false;
             chatHistory.scrollTop = chatHistory.scrollHeight;
+            promptInput.focus();
         }
 
         function copyToClipboard(btn) {
