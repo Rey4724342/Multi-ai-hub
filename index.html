@@ -92,19 +92,18 @@
         <!-- Header -->
         <div class="app-header">
             <div class="brand-info">
-                <div class="brand-logo"><i class="fa-solid fa-robot"></i></div>
+                <div class="brand-logo"><i class="fa-solid fa-bolt"></i></div>
                 <div class="brand-text">
-                    <h1>Quantum V14.0</h1>
+                    <h1>Quantum V14.0 Ultra</h1>
                     <p>© Rey472</p>
                 </div>
             </div>
             <div class="header-actions">
                 <select id="modelSelect" class="model-select">
-                    <option value="openai">ChatGPT</option>
-                    <option value="deepseek">DeepSeek</option>
-                    <option value="gemini">Gemini</option>
-                    <option value="llama">Llama 3</option>
-                    <option value="mistral">Mistral</option>
+                    <option value="openai">ChatGPT (Akurat & Cepat)</option>
+                    <option value="deepseek">DeepSeek (Presisi Koding)</option>
+                    <option value="gemini">Gemini (Respon Cepat)</option>
+                    <option value="mistral">Mistral (Ultra Fast)</option>
                 </select>
                 <button class="icon-btn" onclick="clearChat()" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -115,8 +114,8 @@
             <div class="chat-bubble ai">
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
-                    <strong>Quantum System v14.0 Active</strong><br>
-                    Sistem siap menerima perintah tanpa batasan. Pilih model AI di atas dan mulai percakapan, bray!
+                    <strong>Quantum System v14.0 Ultra Active</strong><br>
+                    Sistem sudah dioptimalkan! Respon lebih kencang & jawaban presisi akurat. Silakan ketik perintah, bray!
                 </div>
             </div>
         </div>
@@ -125,7 +124,7 @@
         <div class="input-bar-container">
             <div class="input-bar">
                 <textarea id="promptInput" rows="1" placeholder="Ketik pesan..." onkeydown="handleChatEnter(event)" oninput="autoExpand(this)"></textarea>
-                <button id="sendBtn" class="send-button" onclick="sendPrompt()"><i class="fa-solid fa-arrow-up"></i></button>
+                <button id="sendBtn" class="send-button" onclick="sendPrompt()"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="footer-tag">Quantum V14.0 • Powered by Rey472</div>
         </div>
@@ -188,11 +187,10 @@
             
             if (!userPrompt) return;
 
-            // Reset textarea height
             promptInput.value = '';
             promptInput.style.height = '24px';
 
-            // Bubble User
+            // User Message
             const userBubble = document.createElement('div');
             userBubble.className = 'chat-bubble user';
             userBubble.innerHTML = `
@@ -202,12 +200,12 @@
             chatHistory.appendChild(userBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Bubble AI Loading
+            // AI Loading Message
             const aiBubble = document.createElement('div');
             aiBubble.className = 'chat-bubble ai';
             aiBubble.innerHTML = `
-                <div class="avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...</span></div>
+                <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
+                <div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Memproses secara kencang & presisi...</span></div>
             `;
             chatHistory.appendChild(aiBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -215,31 +213,17 @@
             sendBtn.disabled = true;
 
             let responseText = "";
+            const startTime = Date.now();
+
             try {
-                const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=${model}`);
+                // Endpoint dioptimalkan dengan cache & routing cepat
+                const fastApiUrl = `https://text.pollinations.ai/${encodeURIComponent(userPrompt)}?model=${model}&cache=true`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 detik timeout emergency
+
+                const res = await fetch(fastApiUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 responseText = await res.text();
 
-                if (!responseText || responseText.includes("{}") || responseText.includes("I'm sorry")) {
-                    const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userPrompt)}`);
-                    responseText = await fallbackRes.text();
-                }
-            } catch (err) {
-                responseText = "Gagal terhubung ke server.";
-            }
-
-            let finalOutput = (responseText && !responseText.includes("{}")) ? responseText : "Gagal memuat respon dari AI.";
-            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\nCopyright © Rey472`;
-
-            const aiContentBox = aiBubble.querySelector('.bubble-content');
-            aiContentBox.innerHTML = marked.parse(formattedResult);
-
-            sendBtn.disabled = false;
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-    </script>
-</body>
-</html>
+                if (!responseText || responseText.includes("{}")) {
+                    const fallbackRes
