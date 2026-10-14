@@ -21,25 +21,32 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* Main Layout */
         #mainSection { display: flex; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
 
         /* Header App */
-        .app-header { background: rgba(19, 27, 46, 0.8); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+        .app-header { background: rgba(19, 27, 46, 0.85); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
         .brand-info { display: flex; align-items: center; gap: 10px; }
         .brand-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #0284c7, #38bdf8); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 18px; }
         .brand-text h1 { font-size: 15px; margin: 0; color: #fff; font-weight: 600; }
         .brand-text p { font-size: 10px; margin: 0; color: var(--text-muted); font-family: monospace; }
 
         .header-actions { display: flex; align-items: center; gap: 8px; }
-        select.model-select { background: #0b0f17; color: #fff; border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-size: 12px; outline: none; cursor: pointer; }
-        .icon-btn { background: #1e293b; color: #ef4444; border: none; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .icon-btn:hover { background: #334155; }
+        select.model-select { background: #0b0f17; color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 11px; outline: none; cursor: pointer; }
+        
+        .safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .safelink-btn:hover { opacity: 0.9; }
+
+        .icon-btn { background: #1e293b; color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* Preset Tools Opsi 4 */
+        .presets-bar { display: flex; gap: 8px; padding: 8px 16px; background: #0e1626; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+        .presets-bar::-webkit-scrollbar { display: none; }
+        .preset-chip { background: #172033; color: var(--accent); border: 1px solid var(--border); padding: 5px 12px; border-radius: 16px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: 0.2s; }
+        .preset-chip:hover { background: var(--user-bubble); color: #fff; }
 
         /* Chat Area */
         .chat-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
-        
-        .chat-bubble { display: flex; gap: 12px; max-width: 90%; }
+        .chat-bubble { display: flex; gap: 12px; max-width: 92%; }
         .chat-bubble.user { align-self: flex-end; flex-direction: row-reverse; }
         .chat-bubble.ai { align-self: flex-start; width: 100%; }
 
@@ -47,26 +54,39 @@
         .user .avatar { background: #2563eb; color: #fff; }
         .ai .avatar { background: #0284c7; color: #fff; }
 
-        .bubble-content { background: var(--ai-bubble); padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border); color: #e2e8f0; overflow-x: auto; }
+        .bubble-content { background: var(--ai-bubble); padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border); color: #e2e8f0; overflow-x: auto; position: relative; }
         .user .bubble-content { background: var(--user-bubble); color: #fff; border: none; border-bottom-right-radius: 4px; }
         .ai .bubble-content { border-top-left-radius: 4px; width: 100%; }
 
-        .bubble-content pre { background: #090d16; padding: 10px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); font-family: monospace; font-size: 12px; }
-        .bubble-content code { font-family: monospace; color: #38bdf8; }
+        .copy-action { margin-top: 8px; display: flex; justify-content: flex-end; }
+        .copy-btn { background: #1e293b; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .copy-btn:hover { color: #fff; background: #334155; }
 
         /* Input Bar */
-        .input-bar-container { padding: 12px 16px; background: rgba(19, 27, 46, 0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
-        .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 16px; gap: 8px; }
+        .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
+        .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 12px; gap: 8px; }
         .input-bar textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; resize: none; height: 24px; max-height: 100px; padding: 4px 0; }
-        .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
-        .send-button:disabled { background: #334155; opacity: 0.5; cursor: not-allowed; }
+        
+        .mic-button { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .mic-button.active { color: #ef4444; animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .send-button:disabled { background: #334155; opacity: 0.5; }
+
+        /* Modal Safelink / Iklan Opsi 3 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 999; padding: 20px; }
+        .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; }
+        .modal-box h3 { color: #10b981; margin-top: 0; font-size: 18px; }
+        .modal-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .modal-btn { display: inline-block; width: 100%; padding: 12px; background: #10b981; color: #fff; font-weight: bold; border-radius: 10px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
 
         .footer-tag { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- MAIN APP INTERFACE -->
     <div id="mainSection">
         
         <!-- Header -->
@@ -74,20 +94,30 @@
             <div class="brand-info">
                 <div class="brand-logo"><i class="fa-solid fa-bolt"></i></div>
                 <div class="brand-text">
-                    <h1>Quantum V14.0 Ultra</h1>
-                    <p>© Rey472 • Free Access</p>
+                    <h1>Quantum V14.0</h1>
+                    <p>© Rey472 • Free AI Hub</p>
                 </div>
             </div>
             <div class="header-actions">
+                <button class="safelink-btn" onclick="openSafelinkModal()">
+                    <i class="fa-solid fa-gem"></i> VIP Akses
+                </button>
                 <select id="modelSelect" class="model-select">
-                    <option value="openai">ChatGPT (Default)</option>
+                    <option value="openai">ChatGPT</option>
                     <option value="deepseek">DeepSeek</option>
                     <option value="gemini">Gemini</option>
                     <option value="llama">Llama 3</option>
-                    <option value="mistral">Mistral</option>
                 </select>
                 <button class="icon-btn" id="clearBtn" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
             </div>
+        </div>
+
+        <!-- Shortcut Preset Opsi 4 (Tugas & Koding) -->
+        <div class="presets-bar">
+            <div class="preset-chip" onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')"><i class="fa-solid fa-file-contract"></i> Rangkum Tugas</div>
+            <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
+            <div class="preset-chip" onclick="usePreset('Buatkan script Python fungsional untuk: ')"><i class="fa-solid fa-code"></i> Script Python</div>
+            <div class="preset-chip" onclick="usePreset('Buatkan prompt preset Lightroom untuk tone warna: ')"><i class="fa-solid fa-camera"></i> Preset Lightroom</div>
         </div>
 
         <!-- Chat Stream -->
@@ -96,7 +126,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Quantum System v14.0 Free Public Access</strong><br>
-                    Selamat datang! Web ini gratis dan bebas diakses siapa saja. Pilih model AI di atas dan mulai percakapan, bray!
+                    Gunakan **shortcut preset** di atas untuk pengerjaan tugas/scripting lebih cepat!
                 </div>
             </div>
         </div>
@@ -104,7 +134,8 @@
         <!-- Input Floating Bar -->
         <div class="input-bar-container">
             <div class="input-bar">
-                <textarea id="promptInput" rows="1" placeholder="Ketik pesan..."></textarea>
+                <button id="micBtn" class="mic-button" title="Ketik Pake Suara"><i class="fa-solid fa-microphone"></i></button>
+                <textarea id="promptInput" rows="1" placeholder="Ketik atau pakai preset di atas..."></textarea>
                 <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="footer-tag">Quantum V14.0 • Free AI Hub by Rey472</div>
@@ -112,11 +143,23 @@
 
     </div>
 
+    <!-- Modal Window Safelink (Pemasukkan Opsi 3) -->
+    <div id="safelinkModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3><i class="fa-solid fa-lock-open"></i> Akses VIP & Fitur Bebas Limit</h3>
+            <p>Dapatkan prioritas respon 2x lebih kencang tanpa terpengaruh antrean server publik. Klik tombol di bawah untuk mengambil token akses gratis via Safelink!</p>
+            <!-- Ganti href di bawah ini pake Link Shortlink / Safelink milik lu (Slink.id, Clicksfly, dll) -->
+            <a href="https://slink.id/" target="_blank" class="modal-btn" onclick="closeSafelinkModal()">AMBIL AKSES VIP (IKLAN)</a>
+            <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted);" onclick="closeSafelinkModal()">Kembali ke Mode Gratis</p>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendBtn');
             const clearBtn = document.getElementById('clearBtn');
             const promptInput = document.getElementById('promptInput');
+            const micBtn = document.getElementById('micBtn');
 
             if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
             if (clearBtn) clearBtn.addEventListener('click', clearChat);
@@ -132,7 +175,46 @@
                     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
                 });
             }
+
+            // Voice Speech Recognition
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'id-ID';
+                recognition.continuous = false;
+
+                micBtn.addEventListener('click', () => {
+                    recognition.start();
+                    micBtn.classList.add('active');
+                });
+
+                recognition.onresult = (event) => {
+                    promptInput.value = event.results[0][0].transcript;
+                    micBtn.classList.remove('active');
+                };
+
+                recognition.onerror = () => micBtn.classList.remove('active');
+                recognition.onend = () => micBtn.classList.remove('active');
+            } else {
+                micBtn.style.display = 'none';
+            }
         });
+
+        function usePreset(prefix) {
+            const promptInput = document.getElementById('promptInput');
+            promptInput.value = prefix;
+            promptInput.focus();
+            promptInput.style.height = 'inherit';
+            promptInput.style.height = Math.min(promptInput.scrollHeight, 100) + 'px';
+        }
+
+        function openSafelinkModal() {
+            document.getElementById('safelinkModal').style.display = 'flex';
+        }
+
+        function closeSafelinkModal() {
+            document.getElementById('safelinkModal').style.display = 'none';
+        }
 
         function clearChat() {
             const chatHistory = document.getElementById('chatHistory');
@@ -168,7 +250,7 @@
                         }
                     }
                 } catch (e) {
-                    console.warn(`Model ${model} timeout/error...`);
+                    console.warn(`Model ${model} fallback...`);
                 }
             }
             return null;
@@ -196,7 +278,7 @@
             chatHistory.appendChild(userBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // AI Loading Message
+            // AI Loading
             const aiBubble = document.createElement('div');
             aiBubble.className = 'chat-bubble ai';
             aiBubble.innerHTML = `
@@ -219,5 +301,36 @@
                 finalOutput = result.text;
                 usedModelName = result.usedModel;
             } else {
-                finalOutput = "Server AI publik sedang sibuk total saat ini. Coba klik 'KIRIM' sekali lagi atau ganti model pilihan di kanan atas, bray!";
+                finalOutput = "Server AI publik sedang sibuk total saat ini. Coba klik 'KIRIM' sekali lagi, bray!";
             }
+            
+            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses (${usedModelName.toUpperCase()}) dalam ${duration} detik | Copyright © Rey472_`;
+
+            const aiContentBox = aiBubble.querySelector('.bubble-content');
+            aiContentBox.innerHTML = marked.parse(formattedResult) + `
+                <div class="copy-action">
+                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
+                </div>
+            `;
+
+            sendBtn.disabled = false;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function copyToClipboard(btn) {
+            const bubble = btn.closest('.bubble-content');
+            const textToCopy = bubble.innerText.replace('Salin', '').trim();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin';
+                }, 2000);
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
