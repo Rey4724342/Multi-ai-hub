@@ -22,7 +22,7 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* Lock Screen Gate */
+        /* Lock Screen Gate (Form Login Wajib Muncul) */
         #lockSection { position: fixed; inset: 0; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 99999; text-align: center; }
         .lock-box { background: var(--card-bg); padding: 30px 20px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .lock-title { color: #ef4444; font-size: 20px; font-weight: 700; margin-bottom: 8px; font-family: monospace; }
@@ -107,7 +107,7 @@
 </head>
 <body>
 
-    <!-- LOCK SCREEN GATE -->
+    <!-- LOCK SCREEN GATE (DIJAMIN MUNCUL DI AWAL) -->
     <div id="lockSection">
         <div class="lock-box">
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
@@ -207,17 +207,18 @@
         const correctKey = "adminrey472";
         let isVipUser = false;
 
-        // CEK APAKAH SUDAH LOGIN SEBELUMNYA DI BROWSER INI
         window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('quantum_auth_unlocked') === 'true') {
-                document.getElementById('lockSection').style.display = 'none';
-                document.getElementById('mainSection').style.display = 'flex';
-                checkVipStatus();
-            }
+            // Sengaja dibuat agar form login selalu tampil di awal (tidak auto-bypass)
+            const lockSection = document.getElementById('lockSection');
+            const mainSection = document.getElementById('mainSection');
+            
+            if (lockSection) lockSection.style.display = 'flex';
+            if (mainSection) mainSection.style.display = 'none';
 
             // Enter key listener pada password input
             const keyInput = document.getElementById('keyInput');
             if (keyInput) {
+                keyInput.focus();
                 keyInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         handleLogin();
@@ -225,7 +226,6 @@
                 });
             }
 
-            // Event handler tombol lain setelah DOM siap
             setupAppListeners();
         });
 
@@ -237,7 +237,6 @@
             const enteredVal = keyInput.value.trim();
 
             if (enteredVal === correctKey) {
-                localStorage.setItem('quantum_auth_unlocked', 'true');
                 document.getElementById('lockSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'flex';
                 checkVipStatus();
