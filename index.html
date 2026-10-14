@@ -1,323 +1,248 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quantum AI V14.0 – Rey472</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        quantum: {
-                            bg: '#0b0f17',
-                            card: '#131b2e',
-                            accent: '#38bdf8',
-                            user: '#1e3a8a',
-                            ai: '#172033',
-                            border: '#1e293b',
-                            vip: '#f59e0b'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- FontAwesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #0b0f17;
-            color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        :root {
+            --bg-color: #0b0f17;
+            --card-bg: #131b2e;
+            --accent: #38bdf8;
+            --user-bubble: #1e3a8a;
+            --ai-bubble: #172033;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --vip-gold: #f59e0b;
         }
-        .vip-glow {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 10px;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 0.4; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-        .animate-mic-pulse {
-            animation: pulse-ring 1.2s infinite ease-in-out;
-        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* Lock Screen Gate */
+        #lockSection { position: fixed; inset: 0; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 99999; text-align: center; }
+        .lock-box { background: var(--card-bg); padding: 30px 20px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .lock-title { color: #ef4444; font-size: 20px; font-weight: 700; margin-bottom: 8px; font-family: monospace; }
+        .lock-input { width: 100%; padding: 12px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 10px; text-align: center; font-size: 14px; margin-top: 15px; outline: none; }
+        .lock-input:focus { border-color: var(--accent); }
+        .lock-btn { width: 100%; padding: 12px; background: #0284c7; color: #fff; border: none; border-radius: 10px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+        .lock-btn:hover { background: #0369a1; }
+
+        /* Main Interface */
+        #mainSection { display: none; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
+
+        /* App Header */
+        .app-header { background: rgba(19, 27, 46, 0.85); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+        .brand-info { display: flex; align-items: center; gap: 10px; }
+        .brand-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #0284c7, #38bdf8); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 18px; }
+        .brand-logo.vip-glow { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        .brand-text h1 { font-size: 15px; margin: 0; color: #fff; font-weight: 600; }
+        .brand-text p { font-size: 10px; margin: 0; color: var(--text-muted); font-family: monospace; }
+
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        select.model-select { background: #0b0f17; color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 11px; outline: none; cursor: pointer; max-width: 130px; }
+        
+        .safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .safelink-btn.active-vip { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .safelink-btn:hover { opacity: 0.9; }
+
+        .icon-btn { background: #1e293b; color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* Presets Horizontal Bar */
+        .presets-bar { display: flex; gap: 8px; padding: 8px 16px; background: #0e1626; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+        .presets-bar::-webkit-scrollbar { display: none; }
+        .preset-chip { background: #172033; color: var(--accent); border: 1px solid var(--border); padding: 5px 12px; border-radius: 16px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: 0.2s; }
+        .preset-chip:hover { background: var(--user-bubble); color: #fff; }
+
+        /* Chat Stream Area */
+        .chat-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+        .chat-bubble { display: flex; gap: 12px; max-width: 92%; }
+        .chat-bubble.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-bubble.ai { align-self: flex-start; width: 100%; }
+
+        .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+        .user .avatar { background: #2563eb; color: #fff; }
+        .ai .avatar { background: #0284c7; color: #fff; }
+        .ai.vip .avatar { background: #f59e0b; color: #fff; }
+
+        .bubble-content { background: var(--ai-bubble); padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border); color: #e2e8f0; overflow-x: auto; position: relative; }
+        .user .bubble-content { background: var(--user-bubble); color: #fff; border: none; border-bottom-right-radius: 4px; }
+        .ai .bubble-content { border-top-left-radius: 4px; width: 100%; }
+
+        .copy-action { margin-top: 8px; display: flex; justify-content: flex-end; }
+        .copy-btn { background: #1e293b; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .copy-btn:hover { color: #fff; background: #334155; }
+
+        /* Input Floating Bar */
+        .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
+        .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 12px; gap: 8px; }
+        .input-bar textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; resize: none; height: 24px; max-height: 100px; padding: 4px 0; }
+        
+        .mic-button { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .mic-button.active { color: #ef4444; animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .send-button.vip-btn { background: #f59e0b; }
+        .send-button:disabled { background: #334155; opacity: 0.5; }
+
+        /* VIP Modal Popup */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
+        .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; }
+        .modal-box h3 { color: #10b981; margin-top: 0; font-size: 18px; }
+        .modal-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .modal-btn { display: inline-block; width: 100%; padding: 12px; background: #10b981; color: #fff; font-weight: bold; border-radius: 10px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
+        .vip-token-input { width: 100%; padding: 10px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 8px; text-align: center; margin-top: 10px; outline: none; font-size: 12px; font-family: monospace; }
+        
+        .gen-box { margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--border); }
+        .gen-btn { background: #f59e0b; color: #000; font-weight: bold; border: none; padding: 8px 12px; border-radius: 8px; width: 100%; font-size: 11px; cursor: pointer; margin-top: 6px; }
+        .gen-result { background: #0b0f17; border: 1px solid var(--border); color: #f59e0b; font-family: monospace; padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 11px; word-break: break-all; }
+
+        .footer-tag { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden justify-between">
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-5 right-5 z-[100000] hidden flex items-center gap-3 bg-slate-800 text-white border border-slate-700 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-[-10px]">
-        <i id="toastIcon" class="fa-solid fa-circle-info text-cyan-400 text-lg"></i>
-        <span id="toastMsg" class="text-xs font-semibold">Notification</span>
-    </div>
+<body>
 
     <!-- LOCK SCREEN GATE -->
-    <div id="lockSection" class="fixed inset-0 z-[99999] bg-[#0b0f17] flex flex-col justify-center items-center p-4">
-        <div class="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center space-y-4">
-            <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-2xl mx-auto flex items-center justify-center text-white text-2xl shadow-lg shadow-cyan-500/30">
-                <i class="fa-solid fa-lock"></i>
-            </div>
-            <div>
-                <h2 class="text-red-500 font-mono font-bold text-lg tracking-wider">[SYSTEM LOCKED🔒]</h2>
-                <p class="text-slate-400 text-xs mt-1">Quantum V14.0 Password Gate</p>
-            </div>
-            <div class="space-y-3">
-                <input type="password" id="keyInput" placeholder="Masukkan Password" autocomplete="current-password" 
-                    class="w-full bg-[#0b0f17] border border-[#1e293b] text-white text-center py-3 px-4 rounded-xl text-sm focus:outline-none focus:border-cyan-400 transition-colors" />
-                <button id="loginBtn" onclick="triggerLogin()" 
-                    class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-cyan-950/50 active:scale-95">
-                    MASUK
-                </button>
-            </div>
-            <p id="errorMsg" class="text-red-400 text-xs font-semibold min-h-[16px]"></p>
+    <div id="lockSection">
+        <div class="lock-box">
+            <div class="lock-title">[SYSTEM LOCKED🔒]</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Quantum V14.0 Password Gate</p>
+            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
+            <button class="lock-btn" id="loginBtn" onclick="triggerLogin()">MASUK</button>
+            <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
         </div>
     </div>
 
     <!-- MAIN APP INTERFACE -->
-    <div id="mainSection" class="hidden flex-col h-screen w-full max-w-4xl mx-auto bg-[#0b0f17] relative">
+    <div id="mainSection">
         
         <!-- Header -->
-        <header class="bg-[#131b2e]/80 backdrop-blur-md px-4 py-3 border-b border-[#1e293b] flex items-center justify-between z-10 sticky top-0">
-            <div class="flex items-center gap-3">
-                <div id="brandLogo" class="w-9 h-9 bg-gradient-to-tr from-cyan-600 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold text-lg transition-all duration-300">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div>
-                    <h1 class="text-sm font-semibold text-white tracking-wide">Quantum V14.0</h1>
-                    <p id="userStatusTag" class="text-[10px] text-slate-400 font-mono">© Rey472 • Free Access</p>
+        <div class="app-header">
+            <div class="brand-info">
+                <div class="brand-logo" id="brandLogo"><i class="fa-solid fa-bolt"></i></div>
+                <div class="brand-text">
+                    <h1>Quantum V14.0</h1>
+                    <p id="userStatusTag">© Rey472 • Free Access</p>
                 </div>
             </div>
-
-            <div class="flex items-center gap-2">
-                <button id="vipBtn" onclick="openVipModal()" 
-                    class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-all shadow-md">
-                    <i class="fa-solid fa-gem text-yellow-300"></i>
-                    <span id="vipBtnText">VIP Akses</span>
+            <div class="header-actions">
+                <button class="safelink-btn" id="vipBtn">
+                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">VIP Akses</span>
                 </button>
-                
-                <select id="modelSelect" class="bg-[#0b0f17] text-white border border-[#1e293b] rounded-lg px-2 py-1.5 text-xs outline-none focus:border-cyan-400 cursor-pointer">
-                    <option value="openai">ChatGPT</option>
-                    <option value="deepseek">DeepSeek</option>
-                    <option value="gemini">Gemini</option>
-                    <option value="llama">Llama 3</option>
+                <select id="modelSelect" class="model-select">
+                    <option value="openai">ChatGPT (GPT-4o)</option>
+                    <option value="deepseek">DeepSeek (R1)</option>
+                    <option value="gemini">Gemini Pro</option>
+                    <option value="claude">Claude 3.5</option>
+                    <option value="qwen">Qwen 2.5</option>
+                    <option value="llama">Llama 3.3</option>
+                    <option value="mistral">Mistral Large</option>
                 </select>
-
-                <button id="clearBtn" onclick="clearChat()" title="Reset Chat" 
-                    class="bg-[#1e293b] text-red-400 hover:text-red-300 w-8 h-8 rounded-lg flex items-center justify-center transition-colors">
-                    <i class="fa-solid fa-trash-can text-xs"></i>
-                </button>
+                <button class="icon-btn" id="clearBtn" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
             </div>
-        </header>
+        </div>
 
-        <!-- Shortcut Presets Bar -->
-        <div class="bg-[#0e1626] border-b border-[#1e293b] px-4 py-2 flex gap-2 overflow-x-auto whitespace-nowrap custom-scrollbar">
-            <button onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')" 
-                class="bg-[#172033] text-cyan-400 border border-[#1e293b] hover:bg-[#1e3a8a] hover:text-white px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-colors">
-                <i class="fa-solid fa-file-contract"></i> Rangkum Tugas
-            </button>
-            <button onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')" 
-                class="bg-[#172033] text-cyan-400 border border-[#1e293b] hover:bg-[#1e3a8a] hover:text-white px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-colors">
-                <i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika
-            </button>
-            <button onclick="usePreset('Buatkan script Python fungsional untuk: ')" 
-                class="bg-[#172033] text-cyan-400 border border-[#1e293b] hover:bg-[#1e3a8a] hover:text-white px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-colors">
-                <i class="fa-solid fa-code"></i> Script Python
-            </button>
-            <button onclick="usePreset('Buatkan prompt preset Lightroom untuk tone warna: ')" 
-                class="bg-[#172033] text-cyan-400 border border-[#1e293b] hover:bg-[#1e3a8a] hover:text-white px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-colors">
-                <i class="fa-solid fa-camera"></i> Preset Lightroom
-            </button>
+        <!-- Shortcut Presets -->
+        <div class="presets-bar">
+            <div class="preset-chip" onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')"><i class="fa-solid fa-file-contract"></i> Rangkum Tugas</div>
+            <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
+            <div class="preset-chip" onclick="usePreset('Buatkan script Python fungsional untuk: ')"><i class="fa-solid fa-code"></i> Script Python</div>
+            <div class="preset-chip" onclick="usePreset('Buatkan prompt preset Lightroom untuk tone warna: ')"><i class="fa-solid fa-camera"></i> Preset Lightroom</div>
         </div>
 
         <!-- Chat Stream -->
-        <div id="chatHistory" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            <div class="flex gap-3 max-w-[92%] self-start">
-                <div class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm flex-shrink-0">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div class="bg-[#172033] border border-[#1e293b] text-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm leading-relaxed">
-                    <strong class="text-white">Quantum System v14.0 Authenticated</strong><br>
-                    Sistem aktif! Klik <strong class="text-yellow-400">VIP Akses</strong> di atas untuk membuka jalur prioritas ultra kencang.
+        <div id="chatHistory" class="chat-container">
+            <div class="chat-bubble ai">
+                <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
+                <div class="bubble-content">
+                    <strong>Quantum System v14.0 Authenticated</strong><br>
+                    Pilih salah satu dari 7 AI Populer Dunia di menu atas, bray!
                 </div>
             </div>
         </div>
 
-        <!-- Floating Input Bar -->
-        <div class="p-4 bg-[#131b2e]/90 backdrop-blur-md border-t border-[#1e293b]">
-            <div class="bg-[#0b0f17] border border-[#1e293b] rounded-2xl p-1.5 flex items-end gap-2 focus-within:border-cyan-500 transition-colors">
-                <button id="micBtn" class="w-9 h-9 text-slate-400 hover:text-red-400 rounded-full flex items-center justify-center flex-shrink-0 transition-colors" title="Ketik Pake Suara">
-                    <i class="fa-solid fa-microphone text-sm"></i>
-                </button>
-                
-                <textarea id="promptInput" rows="1" placeholder="Ketik atau pakai preset di atas..." 
-                    class="flex-1 bg-transparent text-white text-sm outline-none resize-none max-h-28 py-2 px-1 custom-scrollbar"></textarea>
-
-                <button id="sendBtn" onclick="sendPrompt()" 
-                    class="w-9 h-9 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
+        <!-- Input Floating Bar -->
+        <div class="input-bar-container">
+            <div class="input-bar">
+                <button id="micBtn" class="mic-button" title="Ketik Pake Suara"><i class="fa-solid fa-microphone"></i></button>
+                <textarea id="promptInput" rows="1" placeholder="Ketik atau pakai preset di atas..."></textarea>
+                <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-            <div class="text-center text-[10px] text-slate-500 font-mono mt-2">
-                Quantum V14.0 • Multi-AI Hub by Rey472
-            </div>
+            <div class="footer-tag">Quantum V14.0 • Multi-AI Hub by Rey472</div>
         </div>
 
     </div>
 
-    <!-- VIP MODAL & TOKEN GENERATOR -->
-    <div id="safelinkModal" class="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm hidden justify-center items-center p-4">
-        <div class="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-6 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button onclick="closeVipModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
+    <!-- MODAL POPUP IKLAN & VIP TOKEN 5 MENIT -->
+    <div id="safelinkModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3><i class="fa-solid fa-gem"></i> Aktivasi Token VIP</h3>
+            <p>Klik tombol di bawah untuk mengambil **Token VIP 5 Menit** lewat Safelink, lalu tempelkan tokennya!</p>
 
-            <div class="text-center space-y-2 mb-6">
-                <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-xl">
-                    <i class="fa-solid fa-gem"></i>
-                </div>
-                <h3 class="text-lg font-bold text-white">Aktivasi & Generator VIP</h3>
-                <p class="text-xs text-slate-400">Tukar token VIP berdurasi atau buat token baru (Khusus Admin/User)</p>
+            <a href="https://slink.id/" target="_blank" class="modal-btn">1. AMBIL TOKEN VIP (IKLAN)</a>
+
+            <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                <p style="font-size: 11px; margin: 0; color: #fff;">2. Tempelkan Kode Token VIP:</p>
+                <input type="text" id="tokenInput" class="vip-token-input" placeholder="Contoh: VIP-LNV3X89K-A7X9" />
+                <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
 
-            <!-- Tab 1: Redeem Token -->
-            <div class="space-y-4 border-b border-[#1e293b] pb-6 mb-6">
-                <div>
-                    <label class="text-xs text-slate-300 font-semibold block mb-1.5">1. Dapatkan Token VIP (Safelink Ad)</label>
-                    <a href="https://slink.id/" target="_blank" 
-                        class="block text-center w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-950/40">
-                        AMBIL TOKEN VIP (IKLAN)
-                    </a>
-                </div>
-
-                <div>
-                    <label class="text-xs text-slate-300 font-semibold block mb-1.5">2. Masukkan Token VIP</label>
-                    <input type="text" id="tokenInput" placeholder="Contoh: VIP-1A2B3C-9F8E" 
-                        class="w-full bg-[#0b0f17] border border-[#1e293b] text-white text-center py-2.5 px-3 rounded-xl text-xs font-mono focus:outline-none focus:border-amber-400" />
-                    <button id="activateVipBtn" onclick="activateVipToken()" 
-                        class="w-full mt-2 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-amber-950/40">
-                        AKTIFKAN SEKARANG
-                    </button>
-                </div>
+            <!-- Internal Generator Token 5 Menit Khusus Admin -->
+            <div class="gen-box">
+                <p style="font-size: 10px; color: var(--text-muted); margin: 0;">⚡ Generator Token Admin (Strict 5 Menit):</p>
+                <button class="gen-btn" onclick="generateFiveMinToken()">Generate Token 5 Menit</button>
+                <div id="genTokenResult" class="gen-result" style="display:none;"></div>
             </div>
 
-            <!-- Tab 2: Fixed 5-Minute Token Generator -->
-            <div class="bg-[#0b0f17] border border-[#1e293b] rounded-xl p-4 text-center space-y-3">
-                <h4 class="text-xs font-bold text-amber-400 tracking-wider uppercase">⚡ VIP Generator (5 Menit Akses)</h4>
-                <p class="text-[11px] text-slate-400">Klik tombol di bawah untuk membuat Token VIP dengan durasi pas <strong>5 Menit</strong>.</p>
-                
-                <button onclick="generate5MinVipToken()" 
-                    class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-lg text-xs transition-colors">
-                    <i class="fa-solid fa-key mr-1"></i> Generate Token 5 Menit
-                </button>
-
-                <!-- Generated Token Result -->
-                <div id="tokenResultBox" class="hidden bg-[#131b2e] border border-cyan-500/30 rounded-lg p-3 text-left space-y-1.5">
-                    <div class="text-[10px] text-slate-400 font-medium">Token VIP Berhasil Dibuat:</div>
-                    <div id="generatedTokenText" class="text-xs font-mono font-bold text-yellow-400 bg-[#0b0f17] p-2 rounded border border-slate-800 select-all text-center"></div>
-                    <button onclick="copyGeneratedToken()" class="w-full text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-200 py-1 rounded transition-colors">
-                        <i class="fa-regular fa-copy"></i> Salin Token
-                    </button>
-                </div>
-            </div>
+            <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted); font-size: 11px;" id="closeModalText">Batal / Kembali</p>
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        const CORRECT_PASSWORD = "adminrey472";
+        const correctKey = "adminrey472";
         let isVipUser = false;
 
-        // --- TOAST FUNCTION ---
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toastMsg');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMsg.innerText = msg;
-            if (isError) {
-                toastIcon.className = "fa-solid fa-circle-xmark text-red-400 text-lg";
-            } else {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-            }
-
-            toast.classList.remove('hidden');
-            toast.classList.remove('translate-y-[-10px]');
-            toast.classList.add('translate-y-0');
-
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3000);
-        }
-
-        // --- LOCK GATE MECHANISM ---
         function triggerLogin() {
             const keyInput = document.getElementById('keyInput');
             const errorMsg = document.getElementById('errorMsg');
             const lockSection = document.getElementById('lockSection');
             const mainSection = document.getElementById('mainSection');
 
-            const val = keyInput.value.trim();
-            if (val === CORRECT_PASSWORD) {
-                localStorage.setItem('quantum_unlocked', 'true');
-                lockSection.classList.add('hidden');
-                mainSection.classList.remove('hidden');
-                mainSection.classList.add('flex');
+            if (!keyInput) return;
+            const userKey = keyInput.value.trim();
+
+            if (userKey === correctKey) {
+                localStorage.setItem('quantum_auth_unlocked', 'true');
+                lockSection.style.display = 'none';
+                mainSection.style.display = 'flex';
                 checkVipStatus();
             } else {
                 errorMsg.innerText = "Password Salah, bray!";
             }
         }
 
-        // --- VIP TOKEN GENERATOR & VERIFICATION (FIXED 5 MINUTES) ---
-        function generate5MinVipToken() {
-            const FIVE_MINUTES_MS = 5 * 60 * 1000;
-            const expireTime = Date.now() + FIVE_MINUTES_MS;
+        // GENERATOR KETAT KHUSUS 5 MENIT
+        function generateFiveMinToken() {
+            const expireTime = Date.now() + (5 * 60 * 1000); // Tepat 5 Menit
+            const timeCode = expireTime.toString(36).toUpperCase();
+            const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const token = `VIP-${timeCode}-${randomCode}`;
             
-            // Encode time to Base36
-            const expireBase36 = expireTime.toString(36);
-            const randomHash = Math.random().toString(36).substring(2, 6).toUpperCase();
-            
-            const token = `VIP-${expireBase36}-${randomHash}`;
-            
-            const resultBox = document.getElementById('tokenResultBox');
-            const tokenText = document.getElementById('generatedTokenText');
-            
-            tokenText.innerText = token;
-            resultBox.classList.remove('hidden');
-            
-            showToast("Token VIP 5 Menit Berhasil Dibuat!");
+            const resBox = document.getElementById('genTokenResult');
+            resBox.style.display = 'block';
+            resBox.innerText = token;
         }
 
-        function copyGeneratedToken() {
-            const tokenText = document.getElementById('generatedTokenText').innerText;
-            navigator.clipboard.writeText(tokenText);
-            showToast("Token Tersalin ke Clipboard!");
-        }
-
+        // VERIFIKASI KADALUWARSA TOKEN VIP
         function verifyVipToken(tokenString) {
             try {
                 const parts = tokenString.trim().split('-');
-                if (parts.length !== 3 || parts[0] !== 'VIP') {
-                    return { valid: false, reason: "Format Token Salah!" };
-                }
+                if (parts.length !== 3 || parts[0] !== 'VIP') return { valid: false, reason: "Format Token Salah!" };
 
                 const expireTime = parseInt(parts[1], 36);
                 const currentTime = Date.now();
@@ -325,26 +250,12 @@
                 if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" };
 
                 if (currentTime > expireTime) {
-                    return { valid: false, reason: "Token VIP Sudah Kadaluwarsa!" };
+                    return { valid: false, reason: "Token VIP 5 Menit Sudah Kadaluwarsa!" };
                 }
 
                 return { valid: true, expireDate: new Date(expireTime) };
             } catch (e) {
                 return { valid: false, reason: "Gagal memproses token." };
-            }
-        }
-
-        function activateVipToken() {
-            const tokenInput = document.getElementById('tokenInput').value.trim();
-            const result = verifyVipToken(tokenInput);
-
-            if (result.valid) {
-                localStorage.setItem('quantum_vip_expire', result.expireDate.getTime().toString());
-                closeVipModal();
-                checkVipStatus();
-                showToast(`VIP Aktif s/d ${result.expireDate.toLocaleTimeString('id-ID')}`);
-            } else {
-                showToast(result.reason, true);
             }
         }
 
@@ -354,50 +265,82 @@
                 const expireTime = parseInt(savedExpire);
                 if (Date.now() < expireTime) {
                     isVipUser = true;
-                    const dateObj = new Date(expireTime);
-                    const formattedTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
                     document.getElementById('brandLogo').classList.add('vip-glow');
-                    document.getElementById('userStatusTag').innerText = `© Rey472 • ⚡ VIP (s/d ${formattedTime})`;
-                    document.getElementById('userStatusTag').classList.add('text-amber-400');
-                    document.getElementById('vipBtn').className = "bg-gradient-to-r from-amber-600 to-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-all shadow-md";
+                    document.getElementById('userStatusTag').innerText = `© Rey472 • ⚡ VIP ACTIVE`;
+                    document.getElementById('userStatusTag').style.color = "#f59e0b";
+                    document.getElementById('vipBtn').classList.add('active-vip');
                     document.getElementById('vipBtnText').innerText = "⚡ VIP AKTIF";
-                    document.getElementById('sendBtn').className = "w-9 h-9 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md";
+                    document.getElementById('sendBtn').classList.add('vip-btn');
                 } else {
                     localStorage.removeItem('quantum_vip_expire');
                     isVipUser = false;
+                    document.getElementById('brandLogo').classList.remove('vip-glow');
+                    document.getElementById('userStatusTag').innerText = `© Rey472 • Free Access`;
+                    document.getElementById('userStatusTag').style.color = "var(--text-muted)";
+                    document.getElementById('vipBtn').classList.remove('active-vip');
+                    document.getElementById('vipBtnText').innerText = "VIP Akses";
+                    document.getElementById('sendBtn').classList.remove('vip-btn');
                 }
             }
         }
 
-        function openVipModal() {
-            document.getElementById('safelinkModal').classList.remove('hidden');
-            document.getElementById('safelinkModal').classList.add('flex');
-        }
-
-        function closeVipModal() {
-            document.getElementById('safelinkModal').classList.add('hidden');
-            document.getElementById('safelinkModal').classList.remove('flex');
-        }
-
-        // --- INIT & EVENT LISTENERS ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Persistent Session Check
-            if (localStorage.getItem('quantum_unlocked') === 'true') {
-                document.getElementById('lockSection').classList.add('hidden');
-                document.getElementById('mainSection').classList.remove('hidden');
-                document.getElementById('mainSection').classList.add('flex');
+            const keyInput = document.getElementById('keyInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const promptInput = document.getElementById('promptInput');
+            const micBtn = document.getElementById('micBtn');
+
+            const vipBtn = document.getElementById('vipBtn');
+            const safelinkModal = document.getElementById('safelinkModal');
+            const closeModalText = document.getElementById('closeModalText');
+            const activateVipBtn = document.getElementById('activateVipBtn');
+
+            // Persistent Session Login Check
+            if (localStorage.getItem('quantum_auth_unlocked') === 'true') {
+                document.getElementById('lockSection').style.display = 'none';
+                document.getElementById('mainSection').style.display = 'flex';
                 checkVipStatus();
             }
 
-            const keyInput = document.getElementById('keyInput');
             if (keyInput) {
                 keyInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') triggerLogin();
                 });
             }
 
-            const promptInput = document.getElementById('promptInput');
+            // Modal Handlers
+            if (vipBtn) {
+                vipBtn.addEventListener('click', () => {
+                    safelinkModal.style.display = 'flex';
+                });
+            }
+            if (closeModalText) {
+                closeModalText.addEventListener('click', () => {
+                    safelinkModal.style.display = 'none';
+                });
+            }
+
+            // Validasi Aktivasi Token
+            if (activateVipBtn) {
+                activateVipBtn.addEventListener('click', () => {
+                    const token = document.getElementById('tokenInput').value.trim();
+                    const result = verifyVipToken(token);
+
+                    if (result.valid) {
+                        localStorage.setItem('quantum_vip_expire', result.expireDate.getTime().toString());
+                        safelinkModal.style.display = 'none';
+                        checkVipStatus();
+                        alert(`🎉 VIP BERHASIL DIAKTIFKAN!\nBerlaku selama 5 Menit.`);
+                    } else {
+                        alert(`❌ Gagal: ${result.reason}`);
+                    }
+                });
+            }
+
+            if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
+            if (clearBtn) clearBtn.addEventListener('click', clearChat);
             if (promptInput) {
                 promptInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -406,13 +349,12 @@
                     }
                 });
                 promptInput.addEventListener('input', function() {
-                    this.style.height = 'auto';
-                    this.style.height = Math.min(this.scrollHeight, 112) + 'px';
+                    this.style.height = 'inherit';
+                    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
                 });
             }
 
-            // Speech Recognition Setup
-            const micBtn = document.getElementById('micBtn');
+            // Speech Recognition
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 const recognition = new SpeechRecognition();
@@ -421,17 +363,16 @@
 
                 micBtn.addEventListener('click', () => {
                     recognition.start();
-                    micBtn.classList.add('text-red-500', 'animate-mic-pulse');
+                    micBtn.classList.add('active');
                 });
 
                 recognition.onresult = (event) => {
                     promptInput.value = event.results[0][0].transcript;
-                    micBtn.classList.remove('text-red-500', 'animate-mic-pulse');
-                    promptInput.dispatchEvent(new Event('input'));
+                    micBtn.classList.remove('active');
                 };
 
-                recognition.onerror = () => micBtn.classList.remove('text-red-500', 'animate-mic-pulse');
-                recognition.onend = () => micBtn.classList.remove('text-red-500', 'animate-mic-pulse');
+                recognition.onerror = () => micBtn.classList.remove('active');
+                recognition.onend = () => micBtn.classList.remove('active');
             } else {
                 micBtn.style.display = 'none';
             }
@@ -441,66 +382,82 @@
             const promptInput = document.getElementById('promptInput');
             promptInput.value = prefix;
             promptInput.focus();
-            promptInput.style.height = 'auto';
-            promptInput.style.height = Math.min(promptInput.scrollHeight, 112) + 'px';
+            promptInput.style.height = 'inherit';
+            promptInput.style.height = Math.min(promptInput.scrollHeight, 100) + 'px';
         }
 
         function clearChat() {
             const chatHistory = document.getElementById('chatHistory');
             chatHistory.innerHTML = `
-                <div class="flex gap-3 max-w-[92%] self-start">
-                    <div class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm flex-shrink-0">
-                        <i class="fa-solid fa-bolt"></i>
-                    </div>
-                    <div class="bg-[#172033] border border-[#1e293b] text-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm leading-relaxed">
-                        <strong class="text-white">Quantum System v14.0</strong><br>
+                <div class="chat-bubble ai">
+                    <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="bubble-content">
+                        <strong>Quantum System v14.0</strong><br>
                         Riwayat percakapan dibersihkan.
                     </div>
                 </div>`;
         }
 
-        // --- AI API MULTI-ENDPOINT ENGINE ---
+        // AKSES FETCH KE 7 AI POPULER PRESISI
         async function fetchAIResponse(promptText, selectedModel) {
+            const modelMapping = {
+                'openai': 'gpt-4o',
+                'deepseek': 'deepseek-r1',
+                'gemini': 'gemini-pro',
+                'claude': 'claude-3.5-sonnet',
+                'qwen': 'qwen-2.5-72b',
+                'llama': 'llama-3.3-70b',
+                'mistral': 'mistral-large'
+            };
+
+            const targetModel = modelMapping[selectedModel] || 'gpt-4o';
+            const encodedPrompt = encodeURIComponent(promptText);
+
             if (isVipUser) {
                 try {
-                    const encodedPrompt = encodeURIComponent(promptText);
-                    const vipUrl = `https://text.pollinations.ai/${encodedPrompt}?model=${selectedModel}&cache=true`;
+                    const vipUrl = `https://text.pollinations.ai/${encodedPrompt}?model=${targetModel}&cache=true`;
                     const res = await fetch(vipUrl);
                     if (res.ok) {
                         const txt = await res.text();
                         if (txt && txt.trim() !== "" && txt.trim() !== "{}") {
-                            return { text: txt, usedModel: selectedModel + " (VIP FAST)" };
+                            return { text: txt, usedModel: targetModel.toUpperCase() + " (VIP FAST)" };
                         }
                     }
                 } catch (e) {
-                    console.warn("VIP Direct route fallback triggered...");
+                    console.warn("VIP Direct routing fallback...");
                 }
             }
 
-            const modelsToTry = [selectedModel, 'openai', 'deepseek', 'mistral', 'llama'];
-            const uniqueModels = [...new Set(modelsToTry)];
+            try {
+                const url = `https://text.pollinations.ai/${encodedPrompt}?model=${targetModel}&seed=${Math.floor(Math.random() * 1000000)}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-            for (let model of uniqueModels) {
-                try {
-                    const encodedPrompt = encodeURIComponent(promptText);
-                    const url = `https://text.pollinations.ai/${encodedPrompt}?model=${model}&seed=${Math.floor(Math.random() * 1000000)}`;
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
 
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-                    const response = await fetch(url, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-
-                    if (response.ok) {
-                        const text = await response.text();
-                        if (text && text.trim() !== "" && text.trim() !== "{}" && !text.includes("I'm sorry, but I can't help with that.")) {
-                            return { text: text, usedModel: model };
-                        }
+                if (response.ok) {
+                    const text = await response.text();
+                    if (text && text.trim() !== "" && text.trim() !== "{}" && !text.includes("I'm sorry, but I can't help with that.")) {
+                        return { text: text, usedModel: targetModel.toUpperCase() };
                     }
-                } catch (e) {
-                    console.warn(`Model ${model} fallback...`);
                 }
+            } catch (e) {
+                console.warn(`Model ${targetModel} busy, routing fallback...`);
             }
+
+            // Fallback Cadangan
+            try {
+                const fallbackUrl = `https://text.pollinations.ai/${encodedPrompt}?model=gpt-4o&seed=${Math.floor(Math.random() * 1000000)}`;
+                const fallbackRes = await fetch(fallbackUrl);
+                if (fallbackRes.ok) {
+                    const fallbackText = await fallbackRes.text();
+                    return { text: fallbackText, usedModel: "GPT-4O (FALLBACK)" };
+                }
+            } catch (e) {
+                console.error("All AI servers busy.");
+            }
+
             return null;
         }
 
@@ -514,34 +471,22 @@
             if (!userPrompt) return;
 
             promptInput.value = '';
-            promptInput.style.height = 'auto';
+            promptInput.style.height = '24px';
 
-            // Render User Bubble
             const userBubble = document.createElement('div');
-            userBubble.className = 'flex gap-3 max-w-[92%] self-end flex-row-reverse ml-auto';
+            userBubble.className = 'chat-bubble user';
             userBubble.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm flex-shrink-0">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-                <div class="bg-[#1e3a8a] text-white rounded-2xl rounded-tr-none p-3.5 text-sm leading-relaxed">
-                    ${escapeHtml(userPrompt)}
-                </div>
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="bubble-content">${escapeHtml(userPrompt)}</div>
             `;
             chatHistory.appendChild(userBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Render AI Loading Bubble
             const aiBubble = document.createElement('div');
-            aiBubble.className = 'flex gap-3 max-w-[92%] self-start';
+            aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
             aiBubble.innerHTML = `
-                <div class="w-8 h-8 rounded-full ${isVipUser ? 'bg-amber-600' : 'bg-cyan-600'} text-white flex items-center justify-center text-sm flex-shrink-0">
-                    <i class="fa-solid ${isVipUser ? 'fa-crown' : 'fa-bolt'}"></i>
-                </div>
-                <div class="bg-[#172033] border border-[#1e293b] text-slate-200 rounded-2xl rounded-tl-none p-3.5 text-sm leading-relaxed w-full">
-                    <span class="${isVipUser ? 'text-amber-400' : 'text-cyan-400'} font-medium">
-                        <i class="fa-solid fa-bolt fa-spin mr-1"></i> ${isVipUser ? 'Memproses via VIP Route...' : 'Memproses respon...'}
-                    </span>
-                </div>
+                <div class="avatar"><i class="fa-solid ${isVipUser ? 'fa-crown' : 'fa-bolt'}"></i></div>
+                <div class="bubble-content"><span style="color: ${isVipUser ? '#f59e0b' : 'var(--accent)'};"><i class="fa-solid fa-bolt fa-spin"></i> ${isVipUser ? 'Memproses via VIP Ultra Fast Route...' : 'Memproses respon...'}</span></div>
             `;
             chatHistory.appendChild(aiBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -559,20 +504,15 @@
                 finalOutput = result.text;
                 usedModelName = result.usedModel;
             } else {
-                finalOutput = "Server AI publik sedang sibuk saat ini. Coba klik 'KIRIM' sekali lagi, bray!";
+                finalOutput = "Server AI publik sedang sibuk total saat ini. Coba klik 'KIRIM' sekali lagi, bray!";
             }
             
-            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses (${usedModelName.toUpperCase()}) dalam ${duration} detik | Copyright © Rey472_`;
+            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput + `\n\n_⚡ Diproses (${usedModelName}) dalam ${duration} detik | Copyright © Rey472_`;
 
-            const aiContentBox = aiBubble.querySelector('div:last-child');
-            aiContentBox.innerHTML = `
-                <div class="prose prose-invert max-w-none text-sm leading-relaxed">
-                    ${marked.parse(formattedResult)}
-                </div>
-                <div class="mt-2 flex justify-end">
-                    <button onclick="copyToClipboard(this)" class="bg-[#1e293b] hover:bg-slate-700 border border-[#1e293b] text-slate-400 text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors">
-                        <i class="fa-regular fa-copy"></i> Salin
-                    </button>
+            const aiContentBox = aiBubble.querySelector('.bubble-content');
+            aiContentBox.innerHTML = marked.parse(formattedResult) + `
+                <div class="copy-action">
+                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
                 </div>
             `;
 
@@ -581,11 +521,10 @@
         }
 
         function copyToClipboard(btn) {
-            const bubble = btn.closest('div.bg-\\[\\#172033\\]');
-            const prose = bubble.querySelector('.prose');
-            const textToCopy = prose.innerText.replace('Salin', '').trim();
+            const bubble = btn.closest('.bubble-content');
+            const textToCopy = bubble.innerText.replace('Salin', '').trim();
             navigator.clipboard.writeText(textToCopy).then(() => {
-                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Tersalin!';
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
                 setTimeout(() => {
                     btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin';
                 }, 2000);
