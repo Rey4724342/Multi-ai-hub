@@ -140,7 +140,7 @@
             </div>
         </div>
 
-        <!-- Shortcut Preset Tugas & Koding -->
+        <!-- Shortcut Presets -->
         <div class="presets-bar">
             <div class="preset-chip" onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')"><i class="fa-solid fa-file-contract"></i> Rangkum Tugas</div>
             <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
@@ -174,15 +174,14 @@
     <!-- MODAL POPUP IKLAN & TOKEN VIP -->
     <div id="safelinkModal" class="modal-overlay">
         <div class="modal-box">
-            <h3><i class="fa-solid fa-gem"></i> Aktivasi Mode VIP</h3>
-            <p>Klik tombol di bawah untuk mengambil **Token VIP Gratis** lewat iklan Safelink, lalu masukkan tokennya di bawah ini!</p>
+            <h3><i class="fa-solid fa-gem"></i> Aktivasi Token VIP</h3>
+            <p>Klik tombol di bawah untuk mengambil **Token VIP Berdurasi** lewat Safelink, lalu tempelkan tokennya di bawah!</p>
 
-            <!-- Ganti link href ini dengan Shortlink buatanmu -->
             <a href="https://slink.id/" target="_blank" class="modal-btn">1. AMBIL TOKEN VIP (IKLAN)</a>
 
             <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                <p style="font-size: 11px; margin: 0; color: #fff;">2. Masukkan Token VIP yang Didapat:</p>
-                <input type="text" id="tokenInput" class="vip-token-input" placeholder="Ketik Token (Contoh: VIPREY472)" />
+                <p style="font-size: 11px; margin: 0; color: #fff;">2. Tempelkan Kode Token VIP:</p>
+                <input type="text" id="tokenInput" class="vip-token-input" placeholder="Contoh: VIP-LNV3X89K-A7X9" />
                 <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
 
@@ -192,7 +191,6 @@
 
     <script>
         const correctKey = "adminrey472";
-        const validVipToken = "VIPREY472"; // Token VIP yang didapat user dari shortlink
         let isVipUser = false;
 
         function triggerLogin() {
@@ -208,15 +206,46 @@
             }
         }
 
+        // FUNGSI UTAMA VERIFIKASI TOKEN VIP & EXPIRED
+        function verifyVipToken(tokenString) {
+            try {
+                const parts = tokenString.trim().split('-');
+                if (parts.length !== 3 || parts[0] !== 'VIP') return { valid: false, reason: "Format Token Salah!" };
+
+                const expireTime = parseInt(parts[1], 36);
+                const currentTime = Date.now();
+
+                if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" };
+
+                if (currentTime > expireTime) {
+                    return { valid: false, reason: "Token VIP Sudah Kadaluwarsa!" };
+                }
+
+                return { valid: true, expireDate: new Date(expireTime) };
+            } catch (e) {
+                return { valid: false, reason: "Gagal memproses token." };
+            }
+        }
+
         function checkVipStatus() {
-            if (localStorage.getItem('quantum_vip_active') === 'true') {
-                isVipUser = true;
-                document.getElementById('brandLogo').classList.add('vip-glow');
-                document.getElementById('userStatusTag').innerText = "© Rey472 • ⚡ VIP MEMBER";
-                document.getElementById('userStatusTag').style.color = "#f59e0b";
-                document.getElementById('vipBtn').classList.add('active-vip');
-                document.getElementById('vipBtnText').innerText = "⚡ VIP AKTIFF";
-                document.getElementById('sendBtn').classList.add('vip-btn');
+            const savedExpire = localStorage.getItem('quantum_vip_expire');
+            if (savedExpire) {
+                const expireTime = parseInt(savedExpire);
+                if (Date.now() < expireTime) {
+                    isVipUser = true;
+                    const dateObj = new Date(expireTime);
+                    const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+
+                    document.getElementById('brandLogo').classList.add('vip-glow');
+                    document.getElementById('userStatusTag').innerText = `© Rey472 • ⚡ VIP (s/d ${formattedDate})`;
+                    document.getElementById('userStatusTag').style.color = "#f59e0b";
+                    document.getElementById('vipBtn').classList.add('active-vip');
+                    document.getElementById('vipBtnText').innerText = "⚡ VIP AKTIF";
+                    document.getElementById('sendBtn').classList.add('vip-btn');
+                } else {
+                    localStorage.removeItem('quantum_vip_expire');
+                    isVipUser = false;
+                }
             }
         }
 
@@ -240,14 +269,10 @@
                 });
             }
 
-            // Modal VIP Handlers
+            // Modal Handlers
             if (vipBtn) {
                 vipBtn.addEventListener('click', () => {
-                    if (isVipUser) {
-                        alert("Status VIP Lu Sudah Aktif, bray! Nikmati respon ultra kencang.");
-                    } else {
-                        safelinkModal.style.display = 'flex';
-                    }
+                    safelinkModal.style.display = 'flex';
                 });
             }
             if (closeModalText) {
@@ -256,17 +281,19 @@
                 });
             }
 
-            // Validasi Aktivasi Token VIP
+            // Validasi Aktivasi Token VIP Berdurasi
             if (activateVipBtn) {
                 activateVipBtn.addEventListener('click', () => {
                     const token = document.getElementById('tokenInput').value.trim();
-                    if (token.toUpperCase() === validVipToken) {
-                        localStorage.setItem('quantum_vip_active', 'true');
+                    const result = verifyVipToken(token);
+
+                    if (result.valid) {
+                        localStorage.setItem('quantum_vip_expire', result.expireDate.getTime().toString());
                         safelinkModal.style.display = 'none';
                         checkVipStatus();
-                        alert("🎉 Selamat! Mode VIP Berhasil Diaktifkan! Respon AI lu sekarang 2x lebih kencang.");
+                        alert(`🎉 VIP BERHASIL DIAKTIFKAN!\nBerlaku sampai: ${result.expireDate.toLocaleString('id-ID')}`);
                     } else {
-                        alert("❌ Token VIP Salah/Kadaluarsa. Silakan ambil token melalui link iklan di atas!");
+                        alert(`❌ Gagal: ${result.reason}`);
                     }
                 });
             }
@@ -331,7 +358,6 @@
         }
 
         async function fetchAIResponse(promptText, selectedModel) {
-            // Jalur VIP: Langsung tembak tanpa seed delay
             if (isVipUser) {
                 try {
                     const encodedPrompt = encodeURIComponent(promptText);
@@ -348,7 +374,6 @@
                 }
             }
 
-            // Jalur Standar
             const modelsToTry = [selectedModel, 'openai', 'deepseek', 'mistral', 'llama'];
             const uniqueModels = [...new Set(modelsToTry)];
 
@@ -388,7 +413,6 @@
             promptInput.value = '';
             promptInput.style.height = '24px';
 
-            // User Message
             const userBubble = document.createElement('div');
             userBubble.className = 'chat-bubble user';
             userBubble.innerHTML = `
@@ -398,7 +422,6 @@
             chatHistory.appendChild(userBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // AI Loading
             const aiBubble = document.createElement('div');
             aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
             aiBubble.innerHTML = `
