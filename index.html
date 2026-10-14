@@ -492,7 +492,7 @@
                 finalOutput = "Server AI sedang sibuk atau menolak koneksi. Coba ganti model lain atau kirim ulang, bray!";
             }
             
-            // Format bersih tanpa ada tulisan durasi waktu
+            // Teks Header bersih tanpa banner footer waktu sama sekali
             let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
 
             const aiContentBox = aiBubble.querySelector('.bubble-content');
@@ -502,6 +502,7 @@
                 </div>
             `;
 
+            // Tombol kirim langsung aktif instan tanpa jeda/delay
             sendBtn.disabled = false;
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
