@@ -16,6 +16,7 @@
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --border: #1e293b;
+            --vip-gold: #f59e0b;
         }
 
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -37,6 +38,7 @@
         .app-header { background: rgba(19, 27, 46, 0.85); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
         .brand-info { display: flex; align-items: center; gap: 10px; }
         .brand-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #0284c7, #38bdf8); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 18px; }
+        .brand-logo.vip-glow { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
         .brand-text h1 { font-size: 15px; margin: 0; color: #fff; font-weight: 600; }
         .brand-text p { font-size: 10px; margin: 0; color: var(--text-muted); font-family: monospace; }
 
@@ -44,11 +46,12 @@
         select.model-select { background: #0b0f17; color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 11px; outline: none; cursor: pointer; }
         
         .safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: 0.2s; }
+        .safelink-btn.active-vip { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .safelink-btn:hover { opacity: 0.9; }
 
         .icon-btn { background: #1e293b; color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* Preset Tools Opsi 4 */
+        /* Shortcut Presets */
         .presets-bar { display: flex; gap: 8px; padding: 8px 16px; background: #0e1626; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
         .presets-bar::-webkit-scrollbar { display: none; }
         .preset-chip { background: #172033; color: var(--accent); border: 1px solid var(--border); padding: 5px 12px; border-radius: 16px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; transition: 0.2s; }
@@ -63,6 +66,7 @@
         .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
         .user .avatar { background: #2563eb; color: #fff; }
         .ai .avatar { background: #0284c7; color: #fff; }
+        .ai.vip .avatar { background: #f59e0b; color: #fff; }
 
         .bubble-content { background: var(--ai-bubble); padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border); color: #e2e8f0; overflow-x: auto; position: relative; }
         .user .bubble-content { background: var(--user-bubble); color: #fff; border: none; border-bottom-right-radius: 4px; }
@@ -83,21 +87,23 @@
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .send-button.vip-btn { background: #f59e0b; }
         .send-button:disabled { background: #334155; opacity: 0.5; }
 
-        /* Modal Safelink / Iklan Opsi 3 */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 999; padding: 20px; }
+        /* Modal Popup Iklan VIP */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
         .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; }
         .modal-box h3 { color: #10b981; margin-top: 0; font-size: 18px; }
         .modal-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
         .modal-btn { display: inline-block; width: 100%; padding: 12px; background: #10b981; color: #fff; font-weight: bold; border-radius: 10px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
+        .vip-token-input { width: 100%; padding: 10px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 8px; text-align: center; margin-top: 10px; outline: none; font-size: 12px; font-family: monospace; }
 
         .footer-tag { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- LOCK SCREEN (KEMBALI AKTIF) -->
+    <!-- LOCK SCREEN UTAMA -->
     <div id="lockSection">
         <div class="lock-box">
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
@@ -114,15 +120,15 @@
         <!-- Header -->
         <div class="app-header">
             <div class="brand-info">
-                <div class="brand-logo"><i class="fa-solid fa-bolt"></i></div>
+                <div class="brand-logo" id="brandLogo"><i class="fa-solid fa-bolt"></i></div>
                 <div class="brand-text">
                     <h1>Quantum V14.0</h1>
-                    <p>© Rey472 • Free AI Hub</p>
+                    <p id="userStatusTag">© Rey472 • Free Access</p>
                 </div>
             </div>
             <div class="header-actions">
-                <button class="safelink-btn" onclick="openSafelinkModal()">
-                    <i class="fa-solid fa-gem"></i> VIP Akses
+                <button class="safelink-btn" id="vipBtn">
+                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">VIP Akses</span>
                 </button>
                 <select id="modelSelect" class="model-select">
                     <option value="openai">ChatGPT</option>
@@ -134,7 +140,7 @@
             </div>
         </div>
 
-        <!-- Shortcut Preset Opsi 4 (Tugas & Koding) -->
+        <!-- Shortcut Preset Tugas & Koding -->
         <div class="presets-bar">
             <div class="preset-chip" onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')"><i class="fa-solid fa-file-contract"></i> Rangkum Tugas</div>
             <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
@@ -148,7 +154,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Quantum System v14.0 Authenticated</strong><br>
-                    Sistem aktif! Gunakan **shortcut preset** di atas untuk pengerjaan tugas/scripting lebih cepat.
+                    Sistem aktif! Klik **VIP Akses** di atas untuk membuka jalur prioritas ultra kencang.
                 </div>
             </div>
         </div>
@@ -160,23 +166,34 @@
                 <textarea id="promptInput" rows="1" placeholder="Ketik atau pakai preset di atas..."></textarea>
                 <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-            <div class="footer-tag">Quantum V14.0 • Free AI Hub by Rey472</div>
+            <div class="footer-tag">Quantum V14.0 • Multi-AI Hub by Rey472</div>
         </div>
 
     </div>
 
-    <!-- Modal Window Safelink (Pemasukkan Opsi 3) -->
+    <!-- MODAL POPUP IKLAN & TOKEN VIP -->
     <div id="safelinkModal" class="modal-overlay">
         <div class="modal-box">
-            <h3><i class="fa-solid fa-lock-open"></i> Akses VIP & Fitur Bebas Limit</h3>
-            <p>Dapatkan prioritas respon 2x lebih kencang tanpa terpengaruh antrean server publik. Klik tombol di bawah untuk mengambil token akses gratis via Safelink!</p>
-            <a href="https://slink.id/" target="_blank" class="modal-btn" onclick="closeSafelinkModal()">AMBIL AKSES VIP (IKLAN)</a>
-            <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted);" onclick="closeSafelinkModal()">Kembali ke Mode Gratis</p>
+            <h3><i class="fa-solid fa-gem"></i> Aktivasi Mode VIP</h3>
+            <p>Klik tombol di bawah untuk mengambil **Token VIP Gratis** lewat iklan Safelink, lalu masukkan tokennya di bawah ini!</p>
+
+            <!-- Ganti link href ini dengan Shortlink buatanmu -->
+            <a href="https://slink.id/" target="_blank" class="modal-btn">1. AMBIL TOKEN VIP (IKLAN)</a>
+
+            <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                <p style="font-size: 11px; margin: 0; color: #fff;">2. Masukkan Token VIP yang Didapat:</p>
+                <input type="text" id="tokenInput" class="vip-token-input" placeholder="Ketik Token (Contoh: VIPREY472)" />
+                <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
+            </div>
+
+            <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted); font-size: 11px;" id="closeModalText">Batal / Kembali</p>
         </div>
     </div>
 
     <script>
         const correctKey = "adminrey472";
+        const validVipToken = "VIPREY472"; // Token VIP yang didapat user dari shortlink
+        let isVipUser = false;
 
         function triggerLogin() {
             const userKey = document.getElementById('keyInput').value.trim();
@@ -185,8 +202,21 @@
             if (userKey === correctKey) {
                 document.getElementById('lockSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'flex';
+                checkVipStatus();
             } else {
                 errorMsg.innerText = "Password Salah, bray!";
+            }
+        }
+
+        function checkVipStatus() {
+            if (localStorage.getItem('quantum_vip_active') === 'true') {
+                isVipUser = true;
+                document.getElementById('brandLogo').classList.add('vip-glow');
+                document.getElementById('userStatusTag').innerText = "© Rey472 • ⚡ VIP MEMBER";
+                document.getElementById('userStatusTag').style.color = "#f59e0b";
+                document.getElementById('vipBtn').classList.add('active-vip');
+                document.getElementById('vipBtnText').innerText = "⚡ VIP AKTIFF";
+                document.getElementById('sendBtn').classList.add('vip-btn');
             }
         }
 
@@ -198,10 +228,46 @@
             const promptInput = document.getElementById('promptInput');
             const micBtn = document.getElementById('micBtn');
 
+            const vipBtn = document.getElementById('vipBtn');
+            const safelinkModal = document.getElementById('safelinkModal');
+            const closeModalText = document.getElementById('closeModalText');
+            const activateVipBtn = document.getElementById('activateVipBtn');
+
             if (loginBtn) loginBtn.addEventListener('click', triggerLogin);
             if (keyInput) {
                 keyInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') triggerLogin();
+                });
+            }
+
+            // Modal VIP Handlers
+            if (vipBtn) {
+                vipBtn.addEventListener('click', () => {
+                    if (isVipUser) {
+                        alert("Status VIP Lu Sudah Aktif, bray! Nikmati respon ultra kencang.");
+                    } else {
+                        safelinkModal.style.display = 'flex';
+                    }
+                });
+            }
+            if (closeModalText) {
+                closeModalText.addEventListener('click', () => {
+                    safelinkModal.style.display = 'none';
+                });
+            }
+
+            // Validasi Aktivasi Token VIP
+            if (activateVipBtn) {
+                activateVipBtn.addEventListener('click', () => {
+                    const token = document.getElementById('tokenInput').value.trim();
+                    if (token.toUpperCase() === validVipToken) {
+                        localStorage.setItem('quantum_vip_active', 'true');
+                        safelinkModal.style.display = 'none';
+                        checkVipStatus();
+                        alert("🎉 Selamat! Mode VIP Berhasil Diaktifkan! Respon AI lu sekarang 2x lebih kencang.");
+                    } else {
+                        alert("❌ Token VIP Salah/Kadaluarsa. Silakan ambil token melalui link iklan di atas!");
+                    }
                 });
             }
 
@@ -252,14 +318,6 @@
             promptInput.style.height = Math.min(promptInput.scrollHeight, 100) + 'px';
         }
 
-        function openSafelinkModal() {
-            document.getElementById('safelinkModal').style.display = 'flex';
-        }
-
-        function closeSafelinkModal() {
-            document.getElementById('safelinkModal').style.display = 'none';
-        }
-
         function clearChat() {
             const chatHistory = document.getElementById('chatHistory');
             chatHistory.innerHTML = `
@@ -273,6 +331,24 @@
         }
 
         async function fetchAIResponse(promptText, selectedModel) {
+            // Jalur VIP: Langsung tembak tanpa seed delay
+            if (isVipUser) {
+                try {
+                    const encodedPrompt = encodeURIComponent(promptText);
+                    const vipUrl = `https://text.pollinations.ai/${encodedPrompt}?model=${selectedModel}&cache=true`;
+                    const res = await fetch(vipUrl);
+                    if (res.ok) {
+                        const txt = await res.text();
+                        if (txt && txt.trim() !== "" && txt.trim() !== "{}") {
+                            return { text: txt, usedModel: selectedModel + " (VIP FAST)" };
+                        }
+                    }
+                } catch (e) {
+                    console.warn("VIP Direct routing fallback...");
+                }
+            }
+
+            // Jalur Standar
             const modelsToTry = [selectedModel, 'openai', 'deepseek', 'mistral', 'llama'];
             const uniqueModels = [...new Set(modelsToTry)];
 
@@ -324,10 +400,10 @@
 
             // AI Loading
             const aiBubble = document.createElement('div');
-            aiBubble.className = 'chat-bubble ai';
+            aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
             aiBubble.innerHTML = `
-                <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
-                <div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Memproses respon...</span></div>
+                <div class="avatar"><i class="fa-solid ${isVipUser ? 'fa-crown' : 'fa-bolt'}"></i></div>
+                <div class="bubble-content"><span style="color: ${isVipUser ? '#f59e0b' : 'var(--accent)'};"><i class="fa-solid fa-bolt fa-spin"></i> ${isVipUser ? 'Memproses via VIP Ultra Fast Route...' : 'Memproses respon...'}</span></div>
             `;
             chatHistory.appendChild(aiBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
