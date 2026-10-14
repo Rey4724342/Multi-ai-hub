@@ -21,7 +21,17 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        #mainSection { display: flex; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
+        /* Lock Screen */
+        #lockSection { position: fixed; inset: 0; background: var(--bg-color); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; z-index: 9999; text-align: center; }
+        .lock-box { background: var(--card-bg); padding: 30px 20px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .lock-title { color: #ef4444; font-size: 20px; font-weight: 700; margin-bottom: 8px; font-family: monospace; }
+        .lock-input { width: 100%; padding: 12px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 10px; text-align: center; font-size: 14px; margin-top: 15px; outline: none; }
+        .lock-input:focus { border-color: var(--accent); }
+        .lock-btn { width: 100%; padding: 12px; background: #0284c7; color: #fff; border: none; border-radius: 10px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+        .lock-btn:hover { background: #0369a1; }
+
+        /* Main Layout */
+        #mainSection { display: none; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: var(--bg-color); position: relative; }
 
         /* Header App */
         .app-header { background: rgba(19, 27, 46, 0.85); backdrop-filter: blur(10px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
@@ -87,6 +97,18 @@
 </head>
 <body>
 
+    <!-- LOCK SCREEN (KEMBALI AKTIF) -->
+    <div id="lockSection">
+        <div class="lock-box">
+            <div class="lock-title">[SYSTEM LOCKED🔒]</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Quantum V14.0 Password Gate</p>
+            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
+            <button class="lock-btn" id="loginBtn">MASUK</button>
+            <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
+        </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE -->
     <div id="mainSection">
         
         <!-- Header -->
@@ -125,8 +147,8 @@
             <div class="chat-bubble ai">
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
-                    <strong>Quantum System v14.0 Free Public Access</strong><br>
-                    Gunakan **shortcut preset** di atas untuk pengerjaan tugas/scripting lebih cepat!
+                    <strong>Quantum System v14.0 Authenticated</strong><br>
+                    Sistem aktif! Gunakan **shortcut preset** di atas untuk pengerjaan tugas/scripting lebih cepat.
                 </div>
             </div>
         </div>
@@ -148,18 +170,40 @@
         <div class="modal-box">
             <h3><i class="fa-solid fa-lock-open"></i> Akses VIP & Fitur Bebas Limit</h3>
             <p>Dapatkan prioritas respon 2x lebih kencang tanpa terpengaruh antrean server publik. Klik tombol di bawah untuk mengambil token akses gratis via Safelink!</p>
-            <!-- Ganti href di bawah ini pake Link Shortlink / Safelink milik lu (Slink.id, Clicksfly, dll) -->
             <a href="https://slink.id/" target="_blank" class="modal-btn" onclick="closeSafelinkModal()">AMBIL AKSES VIP (IKLAN)</a>
             <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted);" onclick="closeSafelinkModal()">Kembali ke Mode Gratis</p>
         </div>
     </div>
 
     <script>
+        const correctKey = "adminrey472";
+
+        function triggerLogin() {
+            const userKey = document.getElementById('keyInput').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (userKey === correctKey) {
+                document.getElementById('lockSection').style.display = 'none';
+                document.getElementById('mainSection').style.display = 'flex';
+            } else {
+                errorMsg.innerText = "Password Salah, bray!";
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.getElementById('loginBtn');
+            const keyInput = document.getElementById('keyInput');
             const sendBtn = document.getElementById('sendBtn');
             const clearBtn = document.getElementById('clearBtn');
             const promptInput = document.getElementById('promptInput');
             const micBtn = document.getElementById('micBtn');
+
+            if (loginBtn) loginBtn.addEventListener('click', triggerLogin);
+            if (keyInput) {
+                keyInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') triggerLogin();
+                });
+            }
 
             if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
             if (clearBtn) clearBtn.addEventListener('click', clearChat);
