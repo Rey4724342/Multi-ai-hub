@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rey Multi AI Hub – Rey472</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Library OCR untuk Membaca Teks di Dalam Gambar -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -181,7 +183,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Rey Multi AI Hub Authenticated</strong><br>
-                    Sistem siap digunakan, bray! Lu bisa upload foto/file atau minta AI buatkan gambar secara langsung!
+                    Sistem siap digunakan, bray! Sekarang lu bisa foto soal/buku, websitenya bakal otomatis baca tulisannya lalu dijawab AI!
                 </div>
             </div>
         </div>
@@ -301,6 +303,7 @@
         let isVipUser = false;
         let attachedFileContent = null;
         let attachedFileName = "";
+        let extractedImageText = "";
         let isImageGenMode = false;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -397,7 +400,7 @@
             document.getElementById('featureMenu').style.display = 'none';
         }
 
-        function handleFileSelected(event) {
+        async function handleFileSelected(event) {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -405,14 +408,27 @@
             const reader = new FileReader();
 
             if (file.type.startsWith('image/')) {
-                reader.onload = function(e) {
+                showAttachmentPreview(`🔍 Membaca teks dalam foto (${file.name})...`);
+                reader.onload = async function(e) {
                     attachedFileContent = { type: 'image', data: e.target.result };
-                    showAttachmentPreview(`📷 Gambar: ${file.name}`);
+                    
+                    // PROSES OCR AUTOMATIC
+                    try {
+                        const worker = await Tesseract.createWorker('ind+eng');
+                        const ret = await worker.recognize(e.target.result);
+                        extractedImageText = ret.data.text;
+                        await worker.terminate();
+                        showAttachmentPreview(`📷 Foto Terbaca: ${file.name}`);
+                    } catch (err) {
+                        extractedImageText = "";
+                        showAttachmentPreview(`📷 Foto Terlampir: ${file.name}`);
+                    }
                 };
                 reader.readAsDataURL(file);
             } else {
                 reader.onload = function(e) {
                     attachedFileContent = { type: 'text', data: e.target.result };
+                    extractedImageText = "";
                     showAttachmentPreview(`📄 File: ${file.name}`);
                 };
                 reader.readAsText(file);
@@ -428,6 +444,7 @@
         function clearAttachment() {
             attachedFileContent = null;
             attachedFileName = "";
+            extractedImageText = "";
             document.getElementById('attachmentPreview').style.display = 'none';
             document.getElementById('fileInput').value = '';
             document.getElementById('cameraInput').value = '';
@@ -558,9 +575,13 @@
 
             if (attachedFileContent) {
                 if (attachedFileContent.type === 'text') {
-                    fullPrompt = `[Lampiran File: ${attachedFileName}]\nIsi File:\n${attachedFileContent.data}\n\nInstruksi Pengguna: ${promptText}`;
+                    fullPrompt = `[Lampiran File: ${attachedFileName}]\nIsi File:\n${attachedFileContent.data}\n\nInstruksi: ${promptText}`;
                 } else if (attachedFileContent.type === 'image') {
-                    fullPrompt = `[Lampiran Gambar Terdeteksi: ${attachedFileName}]\nTolong analisis gambar ini dan bantu pengguna sesuai instruksi: ${promptText}`;
+                    if (extractedImageText && extractedImageText.trim() !== "") {
+                        fullPrompt = `[Teks Hasil Scan Foto/Buku: ${attachedFileName}]\n"${extractedImageText}"\n\nInstruksi: ${promptText || 'Tolong jawab dan selesaikan soal/materi dari gambar di atas secara rinci.'}`;
+                    } else {
+                        fullPrompt = `[Lampiran Gambar: ${attachedFileName}]\nInstruksi: ${promptText || 'Tolong jelaskan materi ini.'}`;
+                    }
                 }
             }
 
@@ -625,7 +646,7 @@
             let displayUserMessage = escapeHtml(userPrompt);
             if (attachedFileContent) {
                 if (attachedFileContent.type === 'image') {
-                    displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 200px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + displayUserMessage;
+                    displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 200px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Jawaban');
                 } else {
                     displayUserMessage = `📄 <i>[File Attached: ${attachedFileName}]</i><br>` + displayUserMessage;
                 }
@@ -657,7 +678,6 @@
 
             let finalOutput = "";
             
-            // Cek apakah mode Buat Gambar AI
             if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
                 const imagePrompt = userPrompt.replace(/buat gambar:/i, '').trim();
                 const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1024&height=1024&nologo=true`;
