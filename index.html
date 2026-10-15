@@ -162,7 +162,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Rey Multi AI Hub Authenticated</strong><br>
-                    Sistem siap! Pemindaian foto otomatis mendukung orientasi <b>Portrait</b> maupun <b>Landscape</b>.
+                    Sistem siap! Pemindaian foto mendukung posisi tegak, miring, maupun terbalik (0°, 90°, 180°, 270°).
                 </div>
             </div>
         </div>
@@ -349,7 +349,7 @@
             document.getElementById('featureMenu').style.display = 'none';
         }
 
-        // FUNGSI UTAMA PEMUTARAN GAMBAR MULTI-SUDUT (0°, 90°, 180°, 270°)
+        // ROTASI MULTI-SUDUT (0, 90, 180, 270)
         function rotateImage(base64Image, degrees) {
             return new Promise((resolve) => {
                 if (degrees === 0) return resolve(base64Image);
@@ -381,29 +381,23 @@
             const reader = new FileReader();
 
             if (file.type.startsWith('image/')) {
-                showAttachmentPreview(`🔍 Memindai teks (Portrait/Landscape)...`);
+                showAttachmentPreview(`🔍 Memindai teks (0°, 90°, 180°, 270°)...`);
                 reader.onload = async function(e) {
                     attachedFileContent = { type: 'image', data: e.target.result };
                     
                     try {
                         const worker = await Tesseract.createWorker('ind+eng');
                         
-                        // Coba scan di orientasi asli (0 derajat)
-                        let ret = await worker.recognize(e.target.result);
-                        extractedImageText = ret.data.text;
+                        // Rotasi Otomatis Lengkap
+                        const degreesList = [0, 180, 90, 270];
+                        extractedImageText = "";
 
-                        // Jika belum terbaca (misal foto miring/landscape), otomatis putar 90 & 270 derajat
-                        if (!extractedImageText || extractedImageText.trim().length < 10) {
-                            const rotated90 = await rotateImage(e.target.result, 90);
-                            ret = await worker.recognize(rotated90);
-                            if (ret.data.text && ret.data.text.trim().length > 10) {
+                        for (let deg of degreesList) {
+                            const currentImgData = await rotateImage(e.target.result, deg);
+                            const ret = await worker.recognize(currentImgData);
+                            if (ret.data.text && ret.data.text.trim().length > 15) {
                                 extractedImageText = ret.data.text;
-                            } else {
-                                const rotated270 = await rotateImage(e.target.result, 270);
-                                ret = await worker.recognize(rotated270);
-                                if (ret.data.text && ret.data.text.trim().length > 10) {
-                                    extractedImageText = ret.data.text;
-                                }
+                                break;
                             }
                         }
 
