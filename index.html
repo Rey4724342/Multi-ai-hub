@@ -71,10 +71,15 @@
         .bubble-content { background: var(--ai-bubble); padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border); color: #e2e8f0; overflow-x: auto; position: relative; }
         .user .bubble-content { background: var(--user-bubble); color: #fff; border: none; border-bottom-right-radius: 4px; }
         .ai .bubble-content { border-top-left-radius: 4px; width: 100%; }
+        .bubble-content img { max-width: 100%; border-radius: 10px; margin-top: 8px; border: 1px solid var(--border); }
 
         .copy-action { margin-top: 8px; display: flex; justify-content: flex-end; }
         .copy-btn { background: #1e293b; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
         .copy-btn:hover { color: #fff; background: #334155; }
+
+        /* Preview Attachment Box */
+        .attachment-preview { display: none; align-items: center; justify-content: space-between; background: #131b2e; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 8px; margin: 0 16px 6px 16px; font-size: 12px; color: var(--accent); }
+        .attachment-preview button { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 14px; }
 
         /* Input Floating Bar */
         .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); position: relative; }
@@ -91,7 +96,7 @@
         .send-button.vip-btn { background: #f59e0b; }
         .send-button:disabled { background: #334155; opacity: 0.5; }
 
-        /* Feature Popup Menu (Modal Gaya Gemini) */
+        /* Feature Popup Menu */
         .feature-menu { position: absolute; bottom: 75px; left: 16px; right: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 16px; display: none; flex-direction: column; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); z-index: 100; max-height: 380px; overflow-y: auto; }
         .feature-menu-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
@@ -111,7 +116,6 @@
         .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; }
         .modal-box h3 { color: #10b981; margin-top: 0; font-size: 18px; }
         .modal-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-        .modal-btn { display: inline-block; width: 100%; padding: 12px; background: #10b981; color: #fff; font-weight: bold; border-radius: 10px; text-decoration: none; margin-top: 15px; box-sizing: border-box; }
         .vip-token-input { width: 100%; padding: 10px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 8px; text-align: center; margin-top: 10px; outline: none; font-size: 12px; font-family: monospace; }
         
         .gen-box { margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--border); }
@@ -177,12 +181,12 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Rey Multi AI Hub Authenticated</strong><br>
-                    Sistem siap digunakan, bray! Ketik pesan, pilih model, atau klik tombol (+) di bawah untuk fitur lengkapnya.
+                    Sistem siap digunakan, bray! Lu bisa upload foto/file atau minta AI buatkan gambar secara langsung!
                 </div>
             </div>
         </div>
 
-        <!-- FEATURE POPUP MENU (GAYA GEMINI) -->
+        <!-- FEATURE POPUP MENU -->
         <div id="featureMenu" class="feature-menu">
             <div class="feature-menu-header">
                 <span><i class="fa-solid fa-wand-magic-sparkles"></i> Menu Fitur Tambahan</span>
@@ -190,33 +194,33 @@
             </div>
             
             <div class="feature-grid">
-                <div class="feature-icon-item" onclick="triggerFeature('Foto')">
+                <div class="feature-icon-item" onclick="openFileInput('image/*')">
                     <i class="fa-solid fa-image"></i>
                     <span>Foto</span>
                 </div>
-                <div class="feature-icon-item" onclick="triggerFeature('Kamera')">
+                <div class="feature-icon-item" onclick="openFileInput('image/*', true)">
                     <i class="fa-solid fa-camera"></i>
                     <span>Kamera</span>
                 </div>
-                <div class="feature-icon-item" onclick="triggerFeature('File')">
+                <div class="feature-icon-item" onclick="openFileInput('.txt,.pdf,.js,.py,.html,.css,.json')">
                     <i class="fa-solid fa-paperclip"></i>
                     <span>File</span>
                 </div>
-                <div class="feature-icon-item" onclick="triggerFeature('Peta')">
+                <div class="feature-icon-item" onclick="usePreset('Berikan rekomendasi lokasi dan peta panduan rute untuk: ')">
                     <i class="fa-solid fa-map-location-dot"></i>
                     <span>Peta</span>
                 </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="feature-list-item" onclick="usePreset('Buatkan gambar visualisasi dan konsep untuk: ')">
+                <div class="feature-list-item" onclick="setModeImageGen()">
                     <i class="fa-solid fa-palette"></i>
                     <div class="feature-list-text">
-                        <h4>Buat Gambar</h4>
-                        <p>Visualisasikan ide dan edit gambar kreatif</p>
+                        <h4>Buat Gambar (AI Image)</h4>
+                        <p>Generate gambar realistis/anime langsung dari teks</p>
                     </div>
                 </div>
-                <div class="feature-list-item" onclick="usePreset('Buatkan konsep video dan alur cerita untuk topik: ')">
+                <div class="feature-list-item" onclick="usePreset('Buatkan konsep video dan alur cerita storyboard untuk topik: ')">
                     <i class="fa-solid fa-video"></i>
                     <div class="feature-list-text">
                         <h4>Video & Animasi</h4>
@@ -230,14 +234,14 @@
                         <p>Buat trek audio dan lirik lagu</p>
                     </div>
                 </div>
-                <div class="feature-list-item" onclick="usePreset('Buatkan kode, tulisan ringkas, atau bahan slide presentasi untuk: ')">
+                <div class="feature-list-item" onclick="usePreset('Buatkan kode fungsional, tulisan ringkas, atau bahan slide presentasi untuk: ')">
                     <i class="fa-solid fa-file-lines"></i>
                     <div class="feature-list-text">
                         <h4>Canvas</h4>
                         <p>Buat kode pemrograman, tulisan, atau slide</p>
                     </div>
                 </div>
-                <div class="feature-list-item" onclick="usePreset('Berikan laporan mendalam (Deep Research) mengenai topik: ')">
+                <div class="feature-list-item" onclick="usePreset('Berikan laporan analisis mendalam (Deep Research) mengenai topik: ')">
                     <i class="fa-solid fa-magnifying-glass-chart"></i>
                     <div class="feature-list-text">
                         <h4>Deep Research</h4>
@@ -245,6 +249,16 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Hidden File Inputs -->
+        <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelected(event)" />
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" />
+
+        <!-- Preview Attached File -->
+        <div id="attachmentPreview" class="attachment-preview">
+            <span id="attachmentName"><i class="fa-solid fa-paperclip"></i> File terlampir</span>
+            <button onclick="clearAttachment()"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
         <!-- Input Floating Bar -->
@@ -264,7 +278,7 @@
     <div id="safelinkModal" class="modal-overlay">
         <div class="modal-box">
             <h3><i class="fa-solid fa-gem"></i> Aktivasi Token VIP</h3>
-            <p>Ambil kode **Token VIP 5 Menit** dari generator di bawah atau masukkan kodenya!</p>
+            <p>Masukkan kode **Token VIP 5 Menit** dari generator di bawah!</p>
 
             <div style="margin-top: 10px;">
                 <p style="font-size: 11px; margin: 0; color: #fff;">Masukkan Kode Token VIP:</p>
@@ -272,7 +286,6 @@
                 <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
 
-            <!-- Internal Generator Token 5 Menit Khusus Admin -->
             <div class="gen-box">
                 <p style="font-size: 10px; color: var(--text-muted); margin: 0;">⚡ Generator Token Admin (Strict 5 Menit):</p>
                 <button class="gen-btn" onclick="generateFiveMinToken()">Generate Token 5 Menit</button>
@@ -286,6 +299,9 @@
     <script>
         const correctKey = "adminrey472";
         let isVipUser = false;
+        let attachedFileContent = null;
+        let attachedFileName = "";
+        let isImageGenMode = false;
 
         window.addEventListener('DOMContentLoaded', () => {
             const lockSection = document.getElementById('lockSection');
@@ -298,9 +314,7 @@
             if (keyInput) {
                 keyInput.focus();
                 keyInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        handleLogin();
-                    }
+                    if (e.key === 'Enter') handleLogin();
                 });
             }
 
@@ -342,13 +356,8 @@
                 if (parts.length !== 3 || parts[0] !== 'VIP') return { valid: false, reason: "Format Token Salah!" };
 
                 const expireTime = parseInt(parts[1], 36);
-                const currentTime = Date.now();
-
                 if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" };
-
-                if (currentTime > expireTime) {
-                    return { valid: false, reason: "Token VIP 5 Menit Sudah Kadaluwarsa!" };
-                }
+                if (Date.now() > expireTime) return { valid: false, reason: "Token VIP 5 Menit Sudah Kadaluwarsa!" };
 
                 return { valid: true, expireDate: new Date(expireTime) };
             } catch (e) {
@@ -379,6 +388,55 @@
                     document.getElementById('sendBtn').classList.remove('vip-btn');
                 }
             }
+        }
+
+        function openFileInput(acceptType, isCamera = false) {
+            const input = isCamera ? document.getElementById('cameraInput') : document.getElementById('fileInput');
+            if(!isCamera) input.accept = acceptType;
+            input.click();
+            document.getElementById('featureMenu').style.display = 'none';
+        }
+
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            attachedFileName = file.name;
+            const reader = new FileReader();
+
+            if (file.type.startsWith('image/')) {
+                reader.onload = function(e) {
+                    attachedFileContent = { type: 'image', data: e.target.result };
+                    showAttachmentPreview(`📷 Gambar: ${file.name}`);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                reader.onload = function(e) {
+                    attachedFileContent = { type: 'text', data: e.target.result };
+                    showAttachmentPreview(`📄 File: ${file.name}`);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function showAttachmentPreview(text) {
+            const preview = document.getElementById('attachmentPreview');
+            document.getElementById('attachmentName').innerHTML = text;
+            preview.style.display = 'flex';
+        }
+
+        function clearAttachment() {
+            attachedFileContent = null;
+            attachedFileName = "";
+            document.getElementById('attachmentPreview').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('cameraInput').value = '';
+        }
+
+        function setModeImageGen() {
+            isImageGenMode = true;
+            usePreset('Buat gambar: ');
+            document.getElementById('promptInput').placeholder = 'Ketik deskripsi gambar yang mau dibuat...';
         }
 
         function setupAppListeners() {
@@ -482,10 +540,6 @@
             if(featureMenu) featureMenu.style.display = 'none';
         }
 
-        function triggerFeature(featureName) {
-            usePreset(`Tolong bantu saya memproses dan menganalisis ${featureName} berikut: `);
-        }
-
         function clearChat() {
             const chatHistory = document.getElementById('chatHistory');
             chatHistory.innerHTML = `
@@ -496,9 +550,20 @@
                         Riwayat percakapan dibersihkan.
                     </div>
                 </div>`;
+            clearAttachment();
         }
 
         async function fetchAIResponse(promptText, selectedModel) {
+            let fullPrompt = promptText;
+
+            if (attachedFileContent) {
+                if (attachedFileContent.type === 'text') {
+                    fullPrompt = `[Lampiran File: ${attachedFileName}]\nIsi File:\n${attachedFileContent.data}\n\nInstruksi Pengguna: ${promptText}`;
+                } else if (attachedFileContent.type === 'image') {
+                    fullPrompt = `[Lampiran Gambar Terdeteksi: ${attachedFileName}]\nTolong analisis gambar ini dan bantu pengguna sesuai instruksi: ${promptText}`;
+                }
+            }
+
             const modelMapping = {
                 'openai': 'openai',
                 'deepseek': 'deepseek',
@@ -520,7 +585,7 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             model: m,
-                            messages: [{ role: "user", content: promptText }]
+                            messages: [{ role: "user", content: fullPrompt }]
                         })
                     });
 
@@ -528,28 +593,20 @@
                         const data = await response.json();
                         if (data && data.choices && data.choices[0] && data.choices[0].message) {
                             const reply = data.choices[0].message.content;
-                            if (reply && reply.trim() !== "") {
-                                return reply;
-                            }
+                            if (reply && reply.trim() !== "") return reply;
                         }
                     }
-                } catch (e) {
-                    // Lanjut coba model cadangan secara diam-diam
-                }
+                } catch (e) {}
             }
 
             try {
-                const encodedPrompt = encodeURIComponent(promptText);
+                const encodedPrompt = encodeURIComponent(fullPrompt);
                 const fallbackRes = await fetch(`https://text.pollinations.ai/${encodedPrompt}?model=openai`);
                 if (fallbackRes.ok) {
                     const fallbackText = await fallbackRes.text();
-                    if (fallbackText && fallbackText.trim() !== "") {
-                        return fallbackText;
-                    }
+                    if (fallbackText && fallbackText.trim() !== "") return fallbackText;
                 }
-            } catch (e) {
-                // Abaikan
-            }
+            } catch (e) {}
 
             return "Halo bray, AI sedang memproses permintaan lu. Silakan ketik ulang atau kirim pesan sekali lagi!";
         }
@@ -562,17 +619,27 @@
             const sendBtn = document.getElementById('sendBtn');
             const featureMenu = document.getElementById('featureMenu');
             
-            if (!userPrompt) return;
+            if (!userPrompt && !attachedFileContent) return;
             if (featureMenu) featureMenu.style.display = 'none';
+
+            let displayUserMessage = escapeHtml(userPrompt);
+            if (attachedFileContent) {
+                if (attachedFileContent.type === 'image') {
+                    displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 200px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + displayUserMessage;
+                } else {
+                    displayUserMessage = `📄 <i>[File Attached: ${attachedFileName}]</i><br>` + displayUserMessage;
+                }
+            }
 
             promptInput.value = '';
             promptInput.style.height = '24px';
+            promptInput.placeholder = 'Ketik pesan atau pilih fitur (+) di samping...';
 
             const userBubble = document.createElement('div');
             userBubble.className = 'chat-bubble user';
             userBubble.innerHTML = `
                 <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                <div class="bubble-content">${escapeHtml(userPrompt)}</div>
+                <div class="bubble-content">${displayUserMessage}</div>
             `;
             chatHistory.appendChild(userBubble);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -588,8 +655,21 @@
 
             sendBtn.disabled = true;
 
-            const finalOutput = await fetchAIResponse(userPrompt, model);
+            let finalOutput = "";
             
+            // Cek apakah mode Buat Gambar AI
+            if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
+                const imagePrompt = userPrompt.replace(/buat gambar:/i, '').trim();
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1024&height=1024&nologo=true`;
+                
+                finalOutput = `Berikut adalah gambar yang dibuat berdasarkan deskripsi kamu: **"${imagePrompt}"**\n\n![AI Image](${imageUrl})`;
+                isImageGenMode = false;
+            } else {
+                finalOutput = await fetchAIResponse(userPrompt, model);
+            }
+
+            clearAttachment();
+
             let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
 
             const aiContentBox = aiBubble.querySelector('.bubble-content');
