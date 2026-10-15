@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quantum AI V14.0 – Rey472</title>
+    <title>Rey Multi AI Hub – Rey472</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -77,11 +77,12 @@
         .copy-btn:hover { color: #fff; background: #334155; }
 
         /* Input Floating Bar */
-        .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
-        .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 12px; gap: 8px; }
+        .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); position: relative; }
+        .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 10px; gap: 6px; }
         .input-bar textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; resize: none; height: 24px; max-height: 100px; padding: 4px 0; }
         
-        .mic-button { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-icon-btn { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .action-icon-btn:hover { color: var(--accent); background: #172033; }
         .mic-button.active { color: #ef4444; animation: pulse 1s infinite; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
@@ -89,6 +90,21 @@
         .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .send-button.vip-btn { background: #f59e0b; }
         .send-button:disabled { background: #334155; opacity: 0.5; }
+
+        /* Feature Popup Menu (Modal Gaya Gemini) */
+        .feature-menu { position: absolute; bottom: 75px; left: 16px; right: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 16px; display: none; flex-direction: column; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); z-index: 100; max-height: 380px; overflow-y: auto; }
+        .feature-menu-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+        .feature-icon-item { background: #0b0f17; border: 1px solid var(--border); border-radius: 14px; padding: 10px 4px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .feature-icon-item:hover { background: #172033; border-color: var(--accent); }
+        .feature-icon-item i { font-size: 18px; color: var(--accent); }
+        .feature-icon-item span { font-size: 10px; color: var(--text-main); }
+
+        .feature-list-item { display: flex; align-items: center; gap: 12px; background: #0b0f17; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; cursor: pointer; transition: 0.2s; text-align: left; }
+        .feature-list-item:hover { background: #172033; border-color: var(--accent); }
+        .feature-list-item i { font-size: 16px; color: var(--vip-gold); width: 24px; text-align: center; }
+        .feature-list-text h4 { font-size: 12px; margin: 0; color: #fff; font-weight: 600; }
+        .feature-list-text p { font-size: 10px; margin: 2px 0 0 0; color: var(--text-muted); }
 
         /* VIP Modal Popup */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
@@ -111,7 +127,7 @@
     <div id="lockSection">
         <div class="lock-box">
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Quantum V14.0 Password Gate</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Rey Multi AI Hub Password Gate</p>
             <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
             <button class="lock-btn" id="loginBtn" onclick="handleLogin()">MASUK</button>
             <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
@@ -126,7 +142,7 @@
             <div class="brand-info">
                 <div class="brand-logo" id="brandLogo"><i class="fa-solid fa-bolt"></i></div>
                 <div class="brand-text">
-                    <h1>Quantum V14.0</h1>
+                    <h1>Rey Multi AI Hub</h1>
                     <p id="userStatusTag">© Rey472 • Free Access</p>
                 </div>
             </div>
@@ -160,8 +176,73 @@
             <div class="chat-bubble ai">
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
-                    <strong>Quantum System v14.0 Authenticated</strong><br>
-                    Sistem siap digunakan, bray! Ketik pesan atau pilih model di atas.
+                    <strong>Rey Multi AI Hub Authenticated</strong><br>
+                    Sistem siap digunakan, bray! Ketik pesan, pilih model, atau klik tombol (+) di bawah untuk fitur lengkapnya.
+                </div>
+            </div>
+        </div>
+
+        <!-- FEATURE POPUP MENU (GAYA GEMINI) -->
+        <div id="featureMenu" class="feature-menu">
+            <div class="feature-menu-header">
+                <span><i class="fa-solid fa-wand-magic-sparkles"></i> Menu Fitur Tambahan</span>
+                <i class="fa-solid fa-xmark" id="closeFeatureMenu" style="cursor:pointer; font-size: 16px;"></i>
+            </div>
+            
+            <div class="feature-grid">
+                <div class="feature-icon-item" onclick="triggerFeature('Foto')">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Foto</span>
+                </div>
+                <div class="feature-icon-item" onclick="triggerFeature('Kamera')">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Kamera</span>
+                </div>
+                <div class="feature-icon-item" onclick="triggerFeature('File')">
+                    <i class="fa-solid fa-paperclip"></i>
+                    <span>File</span>
+                </div>
+                <div class="feature-icon-item" onclick="triggerFeature('Peta')">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <span>Peta</span>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="feature-list-item" onclick="usePreset('Buatkan gambar visualisasi dan konsep untuk: ')">
+                    <i class="fa-solid fa-palette"></i>
+                    <div class="feature-list-text">
+                        <h4>Buat Gambar</h4>
+                        <p>Visualisasikan ide dan edit gambar kreatif</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" onclick="usePreset('Buatkan konsep video dan alur cerita untuk topik: ')">
+                    <i class="fa-solid fa-video"></i>
+                    <div class="feature-list-text">
+                        <h4>Video & Animasi</h4>
+                        <p>Buat konsep skrip video dan visual</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" onclick="usePreset('Buatkan lirik dan aransemen trek audio/musik untuk tema: ')">
+                    <i class="fa-solid fa-music"></i>
+                    <div class="feature-list-text">
+                        <h4>Buat Musik</h4>
+                        <p>Buat trek audio dan lirik lagu</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" onclick="usePreset('Buatkan kode, tulisan ringkas, atau bahan slide presentasi untuk: ')">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <div class="feature-list-text">
+                        <h4>Canvas</h4>
+                        <p>Buat kode pemrograman, tulisan, atau slide</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" onclick="usePreset('Berikan laporan mendalam (Deep Research) mengenai topik: ')">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    <div class="feature-list-text">
+                        <h4>Deep Research</h4>
+                        <p>Dapatkan laporan analisis mendalam</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -169,25 +250,24 @@
         <!-- Input Floating Bar -->
         <div class="input-bar-container">
             <div class="input-bar">
-                <button id="micBtn" class="mic-button" title="Ketik Pake Suara"><i class="fa-solid fa-microphone"></i></button>
-                <textarea id="promptInput" rows="1" placeholder="Ketik atau pakai preset di atas..."></textarea>
+                <button id="toggleMenuBtn" class="action-icon-btn" title="Menu Tambahan"><i class="fa-solid fa-plus"></i></button>
+                <button id="micBtn" class="action-icon-btn mic-button" title="Ketik Pake Suara"><i class="fa-solid fa-microphone"></i></button>
+                <textarea id="promptInput" rows="1" placeholder="Ketik pesan atau pilih fitur (+) di samping..."></textarea>
                 <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-            <div class="footer-tag">Quantum V14.0 • Multi-AI Hub by Rey472</div>
+            <div class="footer-tag">Rey Multi AI Hub • Multi-AI Hub by Rey472</div>
         </div>
 
     </div>
 
-    <!-- MODAL POPUP IKLAN & VIP TOKEN 5 MENIT -->
+    <!-- MODAL POPUP TOKEN VIP -->
     <div id="safelinkModal" class="modal-overlay">
         <div class="modal-box">
             <h3><i class="fa-solid fa-gem"></i> Aktivasi Token VIP</h3>
-            <p>Klik tombol di bawah untuk mengambil **Token VIP 5 Menit** lewat Safelink, lalu tempelkan tokennya!</p>
+            <p>Ambil kode **Token VIP 5 Menit** dari generator di bawah atau masukkan kodenya!</p>
 
-            <a href="https://slink.id/" target="_blank" class="modal-btn">1. AMBIL TOKEN VIP (IKLAN)</a>
-
-            <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-                <p style="font-size: 11px; margin: 0; color: #fff;">2. Tempelkan Kode Token VIP:</p>
+            <div style="margin-top: 10px;">
+                <p style="font-size: 11px; margin: 0; color: #fff;">Masukkan Kode Token VIP:</p>
                 <input type="text" id="tokenInput" class="vip-token-input" placeholder="Contoh: VIP-LNV3X89K-A7X9" />
                 <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
@@ -312,6 +392,21 @@
             const closeModalText = document.getElementById('closeModalText');
             const activateVipBtn = document.getElementById('activateVipBtn');
 
+            const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+            const featureMenu = document.getElementById('featureMenu');
+            const closeFeatureMenu = document.getElementById('closeFeatureMenu');
+
+            if (toggleMenuBtn && featureMenu) {
+                toggleMenuBtn.addEventListener('click', () => {
+                    featureMenu.style.display = featureMenu.style.display === 'flex' ? 'none' : 'flex';
+                });
+            }
+            if (closeFeatureMenu && featureMenu) {
+                closeFeatureMenu.addEventListener('click', () => {
+                    featureMenu.style.display = 'none';
+                });
+            }
+
             if (vipBtn) {
                 vipBtn.addEventListener('click', () => {
                     safelinkModal.style.display = 'flex';
@@ -383,6 +478,12 @@
             promptInput.focus();
             promptInput.style.height = 'inherit';
             promptInput.style.height = Math.min(promptInput.scrollHeight, 100) + 'px';
+            const featureMenu = document.getElementById('featureMenu');
+            if(featureMenu) featureMenu.style.display = 'none';
+        }
+
+        function triggerFeature(featureName) {
+            usePreset(`Tolong bantu saya memproses dan menganalisis ${featureName} berikut: `);
         }
 
         function clearChat() {
@@ -391,13 +492,12 @@
                 <div class="chat-bubble ai">
                     <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                     <div class="bubble-content">
-                        <strong>Quantum System v14.0</strong><br>
+                        <strong>Rey Multi AI Hub</strong><br>
                         Riwayat percakapan dibersihkan.
                     </div>
                 </div>`;
         }
 
-        // SISTEM AUTO-RETRY OTOMATIS ANTI-GAGAL (TANPA MUNCUL ERROR SIBUK)
         async function fetchAIResponse(promptText, selectedModel) {
             const modelMapping = {
                 'openai': 'openai',
@@ -460,8 +560,10 @@
             const userPrompt = promptInput.value.trim();
             const chatHistory = document.getElementById('chatHistory');
             const sendBtn = document.getElementById('sendBtn');
+            const featureMenu = document.getElementById('featureMenu');
             
             if (!userPrompt) return;
+            if (featureMenu) featureMenu.style.display = 'none';
 
             promptInput.value = '';
             promptInput.style.height = '24px';
@@ -488,7 +590,7 @@
 
             const finalOutput = await fetchAIResponse(userPrompt, model);
             
-            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Quantum V14.0 © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
+            let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
 
             const aiContentBox = aiBubble.querySelector('.bubble-content');
             aiContentBox.innerHTML = marked.parse(formattedResult) + `
@@ -497,7 +599,6 @@
                 </div>
             `;
 
-            // Tombol kirim langsung aktif instan tanpa jeda begitu selesai
             sendBtn.disabled = false;
             chatHistory.scrollTop = chatHistory.scrollHeight;
             promptInput.focus();
