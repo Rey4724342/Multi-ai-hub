@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rey Multi AI Hub – Rey472</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Library OCR untuk Membaca Teks di Dalam Gambar -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -49,7 +48,6 @@
         
         .safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; text-decoration: none; transition: 0.2s; }
         .safelink-btn.active-vip { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .safelink-btn:hover { opacity: 0.9; }
 
         .icon-btn { background: #1e293b; color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
@@ -77,47 +75,34 @@
 
         .copy-action { margin-top: 8px; display: flex; justify-content: flex-end; }
         .copy-btn { background: #1e293b; border: 1px solid var(--border); color: var(--text-muted); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
-        .copy-btn:hover { color: #fff; background: #334155; }
 
-        /* Preview Attachment Box */
         .attachment-preview { display: none; align-items: center; justify-content: space-between; background: #131b2e; border: 1px solid var(--accent); padding: 6px 12px; border-radius: 8px; margin: 0 16px 6px 16px; font-size: 12px; color: var(--accent); }
         .attachment-preview button { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 14px; }
 
-        /* Input Floating Bar */
         .input-bar-container { padding: 10px 16px; background: rgba(19, 27, 46, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); position: relative; }
         .input-bar { display: flex; align-items: center; background: #0b0f17; border: 1px solid var(--border); border-radius: 24px; padding: 4px 6px 4px 10px; gap: 6px; }
         .input-bar textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; resize: none; height: 24px; max-height: 100px; padding: 4px 0; }
         
-        .action-icon-btn { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; transition: 0.2s; }
-        .action-icon-btn:hover { color: var(--accent); background: #172033; }
-        .mic-button.active { color: #ef4444; animation: pulse 1s infinite; }
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .action-icon-btn { background: transparent; color: var(--text-muted); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; }
 
         .send-button { background: #0284c7; color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .send-button.vip-btn { background: #f59e0b; }
         .send-button:disabled { background: #334155; opacity: 0.5; }
 
-        /* Feature Popup Menu */
         .feature-menu { position: absolute; bottom: 75px; left: 16px; right: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 16px; display: none; flex-direction: column; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); z-index: 100; max-height: 380px; overflow-y: auto; }
         .feature-menu-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
-        .feature-icon-item { background: #0b0f17; border: 1px solid var(--border); border-radius: 14px; padding: 10px 4px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .feature-icon-item:hover { background: #172033; border-color: var(--accent); }
+        .feature-icon-item { background: #0b0f17; border: 1px solid var(--border); border-radius: 14px; padding: 10px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .feature-icon-item i { font-size: 18px; color: var(--accent); }
         .feature-icon-item span { font-size: 10px; color: var(--text-main); }
 
-        .feature-list-item { display: flex; align-items: center; gap: 12px; background: #0b0f17; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; cursor: pointer; transition: 0.2s; text-align: left; }
-        .feature-list-item:hover { background: #172033; border-color: var(--accent); }
+        .feature-list-item { display: flex; align-items: center; gap: 12px; background: #0b0f17; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; cursor: pointer; text-align: left; }
         .feature-list-item i { font-size: 16px; color: var(--vip-gold); width: 24px; text-align: center; }
         .feature-list-text h4 { font-size: 12px; margin: 0; color: #fff; font-weight: 600; }
         .feature-list-text p { font-size: 10px; margin: 2px 0 0 0; color: var(--text-muted); }
 
-        /* VIP Modal Popup */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
         .modal-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; text-align: center; }
-        .modal-box h3 { color: #10b981; margin-top: 0; font-size: 18px; }
-        .modal-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
         .vip-token-input { width: 100%; padding: 10px; background: #0b0f17; color: #fff; border: 1px solid var(--border); border-radius: 8px; text-align: center; margin-top: 10px; outline: none; font-size: 12px; font-family: monospace; }
         
         .gen-box { margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--border); }
@@ -129,7 +114,6 @@
 </head>
 <body>
 
-    <!-- LOCK SCREEN GATE -->
     <div id="lockSection">
         <div class="lock-box">
             <div class="lock-title">[SYSTEM LOCKED🔒]</div>
@@ -140,10 +124,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP INTERFACE -->
     <div id="mainSection">
-        
-        <!-- Header -->
         <div class="app-header">
             <div class="brand-info">
                 <div class="brand-logo" id="brandLogo"><i class="fa-solid fa-bolt"></i></div>
@@ -169,26 +150,23 @@
             </div>
         </div>
 
-        <!-- Shortcut Presets -->
         <div class="presets-bar">
             <div class="preset-chip" onclick="usePreset('Buatkan rangkuman ringkas dan rapi dari materi ini: ')"><i class="fa-solid fa-file-contract"></i> Rangkum Tugas</div>
-            <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
+            <div class="preset-chip" onclick="usePreset('Jawab dan jelaskan langkah penyelesaian soal matematika/fisika/sains ini: ')"><i class="fa-solid fa-calculator"></i> Soal Mtk/Fisika</div>
             <div class="preset-chip" onclick="usePreset('Buatkan script Python fungsional untuk: ')"><i class="fa-solid fa-code"></i> Script Python</div>
             <div class="preset-chip" onclick="usePreset('Buatkan prompt preset Lightroom untuk tone warna: ')"><i class="fa-solid fa-camera"></i> Preset Lightroom</div>
         </div>
 
-        <!-- Chat Stream -->
         <div id="chatHistory" class="chat-container">
             <div class="chat-bubble ai">
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Rey Multi AI Hub Authenticated</strong><br>
-                    Sistem siap digunakan, bray! Sekarang lu bisa foto soal/buku, websitenya bakal otomatis baca tulisannya lalu dijawab AI!
+                    Sistem siap! Pemindaian foto otomatis mendukung orientasi <b>Portrait</b> maupun <b>Landscape</b>.
                 </div>
             </div>
         </div>
 
-        <!-- FEATURE POPUP MENU -->
         <div id="featureMenu" class="feature-menu">
             <div class="feature-menu-header">
                 <span><i class="fa-solid fa-wand-magic-sparkles"></i> Menu Fitur Tambahan</span>
@@ -236,34 +214,17 @@
                         <p>Buat trek audio dan lirik lagu</p>
                     </div>
                 </div>
-                <div class="feature-list-item" onclick="usePreset('Buatkan kode fungsional, tulisan ringkas, atau bahan slide presentasi untuk: ')">
-                    <i class="fa-solid fa-file-lines"></i>
-                    <div class="feature-list-text">
-                        <h4>Canvas</h4>
-                        <p>Buat kode pemrograman, tulisan, atau slide</p>
-                    </div>
-                </div>
-                <div class="feature-list-item" onclick="usePreset('Berikan laporan analisis mendalam (Deep Research) mengenai topik: ')">
-                    <i class="fa-solid fa-magnifying-glass-chart"></i>
-                    <div class="feature-list-text">
-                        <h4>Deep Research</h4>
-                        <p>Dapatkan laporan analisis mendalam</p>
-                    </div>
-                </div>
             </div>
         </div>
 
-        <!-- Hidden File Inputs -->
         <input type="file" id="fileInput" style="display: none;" onchange="handleFileSelected(event)" />
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" />
 
-        <!-- Preview Attached File -->
         <div id="attachmentPreview" class="attachment-preview">
             <span id="attachmentName"><i class="fa-solid fa-paperclip"></i> File terlampir</span>
             <button onclick="clearAttachment()"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <!-- Input Floating Bar -->
         <div class="input-bar-container">
             <div class="input-bar">
                 <button id="toggleMenuBtn" class="action-icon-btn" title="Menu Tambahan"><i class="fa-solid fa-plus"></i></button>
@@ -273,27 +234,20 @@
             </div>
             <div class="footer-tag">Rey Multi AI Hub • Multi-AI Hub by Rey472</div>
         </div>
-
     </div>
 
-    <!-- MODAL POPUP TOKEN VIP -->
     <div id="safelinkModal" class="modal-overlay">
         <div class="modal-box">
             <h3><i class="fa-solid fa-gem"></i> Aktivasi Token VIP</h3>
             <p>Masukkan kode **Token VIP 5 Menit** dari generator di bawah!</p>
-
             <div style="margin-top: 10px;">
-                <p style="font-size: 11px; margin: 0; color: #fff;">Masukkan Kode Token VIP:</p>
                 <input type="text" id="tokenInput" class="vip-token-input" placeholder="Contoh: VIP-LNV3X89K-A7X9" />
                 <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
-
             <div class="gen-box">
-                <p style="font-size: 10px; color: var(--text-muted); margin: 0;">⚡ Generator Token Admin (Strict 5 Menit):</p>
                 <button class="gen-btn" onclick="generateFiveMinToken()">Generate Token 5 Menit</button>
                 <div id="genTokenResult" class="gen-result" style="display:none;"></div>
             </div>
-
             <p style="margin-top: 12px; cursor: pointer; color: var(--text-muted); font-size: 11px;" id="closeModalText">Batal / Kembali</p>
         </div>
     </div>
@@ -309,7 +263,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             const lockSection = document.getElementById('lockSection');
             const mainSection = document.getElementById('mainSection');
-            
             if (lockSection) lockSection.style.display = 'flex';
             if (mainSection) mainSection.style.display = 'none';
 
@@ -327,7 +280,6 @@
         function handleLogin() {
             const keyInput = document.getElementById('keyInput');
             const errorMsg = document.getElementById('errorMsg');
-            
             if (!keyInput) return;
             const enteredVal = keyInput.value.trim();
 
@@ -347,7 +299,6 @@
             const timeCode = expireTime.toString(36).toUpperCase();
             const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
             const token = `VIP-${timeCode}-${randomCode}`;
-            
             const resBox = document.getElementById('genTokenResult');
             resBox.style.display = 'block';
             resBox.innerText = token;
@@ -357,11 +308,9 @@
             try {
                 const parts = tokenString.trim().split('-');
                 if (parts.length !== 3 || parts[0] !== 'VIP') return { valid: false, reason: "Format Token Salah!" };
-
                 const expireTime = parseInt(parts[1], 36);
                 if (isNaN(expireTime)) return { valid: false, reason: "Token Tidak Valid!" };
                 if (Date.now() > expireTime) return { valid: false, reason: "Token VIP 5 Menit Sudah Kadaluwarsa!" };
-
                 return { valid: true, expireDate: new Date(expireTime) };
             } catch (e) {
                 return { valid: false, reason: "Gagal memproses token." };
@@ -400,6 +349,30 @@
             document.getElementById('featureMenu').style.display = 'none';
         }
 
+        // FUNGSI UTAMA PEMUTARAN GAMBAR MULTI-SUDUT (0°, 90°, 180°, 270°)
+        function rotateImage(base64Image, degrees) {
+            return new Promise((resolve) => {
+                if (degrees === 0) return resolve(base64Image);
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (degrees === 90 || degrees === 270) {
+                        canvas.width = img.height;
+                        canvas.height = img.width;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate((degrees * Math.PI) / 180);
+                    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.src = base64Image;
+            });
+        }
+
         async function handleFileSelected(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -408,17 +381,39 @@
             const reader = new FileReader();
 
             if (file.type.startsWith('image/')) {
-                showAttachmentPreview(`🔍 Membaca teks dalam foto (${file.name})...`);
+                showAttachmentPreview(`🔍 Memindai teks (Portrait/Landscape)...`);
                 reader.onload = async function(e) {
                     attachedFileContent = { type: 'image', data: e.target.result };
                     
-                    // PROSES OCR AUTOMATIC
                     try {
                         const worker = await Tesseract.createWorker('ind+eng');
-                        const ret = await worker.recognize(e.target.result);
+                        
+                        // Coba scan di orientasi asli (0 derajat)
+                        let ret = await worker.recognize(e.target.result);
                         extractedImageText = ret.data.text;
+
+                        // Jika belum terbaca (misal foto miring/landscape), otomatis putar 90 & 270 derajat
+                        if (!extractedImageText || extractedImageText.trim().length < 10) {
+                            const rotated90 = await rotateImage(e.target.result, 90);
+                            ret = await worker.recognize(rotated90);
+                            if (ret.data.text && ret.data.text.trim().length > 10) {
+                                extractedImageText = ret.data.text;
+                            } else {
+                                const rotated270 = await rotateImage(e.target.result, 270);
+                                ret = await worker.recognize(rotated270);
+                                if (ret.data.text && ret.data.text.trim().length > 10) {
+                                    extractedImageText = ret.data.text;
+                                }
+                            }
+                        }
+
                         await worker.terminate();
-                        showAttachmentPreview(`📷 Foto Terbaca: ${file.name}`);
+                        
+                        if(extractedImageText && extractedImageText.trim().length > 5) {
+                            showAttachmentPreview(`📷 Foto Terbaca (${extractedImageText.substring(0, 20)}...)`);
+                        } else {
+                            showAttachmentPreview(`📷 Foto Terlampir (${file.name})`);
+                        }
                     } catch (err) {
                         extractedImageText = "";
                         showAttachmentPreview(`📷 Foto Terlampir: ${file.name}`);
@@ -482,22 +477,13 @@
                 });
             }
 
-            if (vipBtn) {
-                vipBtn.addEventListener('click', () => {
-                    safelinkModal.style.display = 'flex';
-                });
-            }
-            if (closeModalText) {
-                closeModalText.addEventListener('click', () => {
-                    safelinkModal.style.display = 'none';
-                });
-            }
+            if (vipBtn) vipBtn.addEventListener('click', () => { safelinkModal.style.display = 'flex'; });
+            if (closeModalText) closeModalText.addEventListener('click', () => { safelinkModal.style.display = 'none'; });
 
             if (activateVipBtn) {
                 activateVipBtn.addEventListener('click', () => {
                     const token = document.getElementById('tokenInput').value.trim();
                     const result = verifyVipToken(token);
-
                     if (result.valid) {
                         localStorage.setItem('quantum_vip_expire', result.expireDate.getTime().toString());
                         safelinkModal.style.display = 'none';
@@ -522,28 +508,6 @@
                     this.style.height = 'inherit';
                     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
                 });
-            }
-
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'id-ID';
-                recognition.continuous = false;
-
-                micBtn.addEventListener('click', () => {
-                    recognition.start();
-                    micBtn.classList.add('active');
-                });
-
-                recognition.onresult = (event) => {
-                    promptInput.value = event.results[0][0].transcript;
-                    micBtn.classList.remove('active');
-                };
-
-                recognition.onerror = () => micBtn.classList.remove('active');
-                recognition.onend = () => micBtn.classList.remove('active');
-            } else {
-                if(micBtn) micBtn.style.display = 'none';
             }
         }
 
@@ -578,9 +542,9 @@
                     fullPrompt = `[Lampiran File: ${attachedFileName}]\nIsi File:\n${attachedFileContent.data}\n\nInstruksi: ${promptText}`;
                 } else if (attachedFileContent.type === 'image') {
                     if (extractedImageText && extractedImageText.trim() !== "") {
-                        fullPrompt = `[Teks Hasil Scan Foto/Buku: ${attachedFileName}]\n"${extractedImageText}"\n\nInstruksi: ${promptText || 'Tolong jawab dan selesaikan soal/materi dari gambar di atas secara rinci.'}`;
+                        fullPrompt = `Berikut adalah hasil scan teks dari soal/buku di gambar:\n"${extractedImageText}"\n\nTolong jawab dan selesaikan pertanyaan/soal tersebut secara lengkap dan rinci. Instruksi tambahan: ${promptText || 'Jawab semua soal dengan rinci.'}`;
                     } else {
-                        fullPrompt = `[Lampiran Gambar: ${attachedFileName}]\nInstruksi: ${promptText || 'Tolong jelaskan materi ini.'}`;
+                        fullPrompt = `[Pengguna melampirkan foto soal/buku]\nInstruksi: ${promptText || 'Jelaskan atau selesaikan materi soal ini.'}`;
                     }
                 }
             }
@@ -646,7 +610,7 @@
             let displayUserMessage = escapeHtml(userPrompt);
             if (attachedFileContent) {
                 if (attachedFileContent.type === 'image') {
-                    displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 200px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Jawaban');
+                    displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 200px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Jawaban Soal');
                 } else {
                     displayUserMessage = `📄 <i>[File Attached: ${attachedFileName}]</i><br>` + displayUserMessage;
                 }
@@ -681,7 +645,6 @@
             if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
                 const imagePrompt = userPrompt.replace(/buat gambar:/i, '').trim();
                 const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1024&height=1024&nologo=true`;
-                
                 finalOutput = `Berikut adalah gambar yang dibuat berdasarkan deskripsi kamu: **"${imagePrompt}"**\n\n![AI Image](${imageUrl})`;
                 isImageGenMode = false;
             } else {
