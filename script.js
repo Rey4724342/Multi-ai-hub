@@ -78,7 +78,7 @@ function quickCompressImage(base64Image) {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600;
+            const MAX_WIDTH = 500;
             let width = img.width;
             let height = img.height;
             if (width > MAX_WIDTH) {
@@ -89,7 +89,7 @@ function quickCompressImage(base64Image) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.8));
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
         };
         img.src = base64Image;
     });
@@ -224,28 +224,76 @@ function clearChat() {
     clearAttachment();
 }
 
-async function fetchAIResponse(promptText, selectedModel) {
+// BOT STREAMING ENGINE (EFEK KETIK KILAT STREAMING REAL-TIME)
+async function streamAIResponse(promptText, selectedModel, targetContainer) {
     let fullPrompt = promptText;
     if (attachedFileContent && attachedFileContent.type === 'image') {
-        fullPrompt = `Teks dari foto: "${extractedImageText || 'Tidak terbaca'}". Perintah: "${promptText || 'Jawab secara acak dan asal-asalan'}".`;
+        fullPrompt = `Teks dari foto: "${extractedImageText || 'Tidak terbaca'}". Perintah: "${promptText || 'Jawab singkat dan langsung'}".`;
     }
 
-    const endpoints = [
-        fetch("https://gen.pollinations.ai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: selectedModel || 'openai', messages: [{ role: "user", content: fullPrompt }] })
-        }).then(async r => { if(r.ok) { const d = await r.json(); return d.choices?.[0]?.message?.content; } throw new Error(); }),
-        
-        fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`).then(async r => { if(r.ok) return await r.text(); throw new Error(); })
-    ];
+    const headerDecoration = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     try {
-        const fastestReply = await Promise.any(endpoints);
-        if (fastestReply && fastestReply.trim() !== "") return fastestReply;
+        const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: selectedModel || 'openai',
+                messages: [{ role: "user", content: fullPrompt }],
+                stream: true // MENGAKTIFKAN STREAMING
+            })
+        });
+
+        if (response.ok && response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let accumulatedText = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (let line of lines) {
+                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                        try {
+                            const parsed = JSON.parse(line.replace('data: ', ''));
+                            const content = parsed.choices?.[0]?.delta?.content || "";
+                            accumulatedText += content;
+
+                            // BIKIN EFEK KETIK LANGSUNG DI LAYAR
+                            targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + `
+                                <div class="copy-action">
+                                    <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
+                                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
+                                </div>
+                            `;
+                        } catch (e) {}
+                    }
+                }
+            }
+            if (accumulatedText.trim() !== "") return;
+        }
     } catch (e) {}
 
-    return "Waduh bray, koneksi turbo mendadak kilat! Coba kirim ulang ya!";
+    // FALLBACK CEPAT JIKA STREAMING GAGAL
+    try {
+        const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`);
+        if (fallbackRes.ok) {
+            const text = await fallbackRes.text();
+            targetContainer.innerHTML = marked.parse(headerDecoration + text) + `
+                <div class="copy-action">
+                    <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
+                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
+                </div>
+            `;
+            return;
+        }
+    } catch (e) {}
+
+    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh bray, bot sedang memulihkan koneksi! Coba kirim ulang ya.");
 }
 
 async function sendPrompt() {
@@ -276,31 +324,24 @@ async function sendPrompt() {
 
     const aiBubble = document.createElement('div');
     aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
-    aiBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-bolt"></i></div><div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Turbo Connecting...</span></div>`;
+    aiBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Bot sedang mengetik...</span></div>`;
     chatHistory.appendChild(aiBubble);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
     sendBtn.disabled = true;
 
-    let finalOutput = "";
+    const targetContainer = aiBubble.querySelector('.bubble-content');
+
     if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
         const imgP = userPrompt.replace(/buat gambar:/i, '').trim();
-        finalOutput = `Hasil Generate: **"${imgP}"**\n\n![AI Image](https://image.pollinations.ai/prompt/${encodeURIComponent(imgP)}?width=1024&height=1024&nologo=true)`;
+        const finalOutput = `Hasil Generate: **"${imgP}"**\n\n![AI Image](https://image.pollinations.ai/prompt/${encodeURIComponent(imgP)}?width=1024&height=1024&nologo=true)`;
+        targetContainer.innerHTML = marked.parse(`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput);
         isImageGenMode = false;
     } else {
-        finalOutput = await fetchAIResponse(userPrompt, model);
+        await streamAIResponse(userPrompt, model, targetContainer);
     }
 
     clearAttachment();
-
-    let formattedResult = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput;
-
-    aiBubble.querySelector('.bubble-content').innerHTML = marked.parse(formattedResult) + `
-        <div class="copy-action">
-            <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
-            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
-        </div>
-    `;
 
     sendBtn.disabled = false;
     chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -315,7 +356,6 @@ function copyToClipboard(btn) {
     });
 }
 
-// FITUR SUARA (TEXT TO SPEECH)
 function speakText(btn) {
     const text = btn.closest('.bubble-content').innerText.replace('Salin', '').replace('Baca', '').trim();
     window.speechSynthesis.cancel();
@@ -325,7 +365,6 @@ function speakText(btn) {
     window.speechSynthesis.speak(utterance);
 }
 
-// FITUR SIMPAN CHAT HISTORY KE FILE TXT
 function downloadChatHistory() {
     const chatText = document.getElementById('chatHistory').innerText;
     const blob = new Blob([chatText], { type: 'text/plain;charset=utf-8' });
