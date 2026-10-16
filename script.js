@@ -297,6 +297,7 @@ async function sendPrompt() {
 
     aiBubble.querySelector('.bubble-content').innerHTML = marked.parse(formattedResult) + `
         <div class="copy-action">
+            <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
             <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
         </div>
     `;
@@ -307,11 +308,31 @@ async function sendPrompt() {
 }
 
 function copyToClipboard(btn) {
-    const text = btn.closest('.bubble-content').innerText.replace('Salin', '').trim();
+    const text = btn.closest('.bubble-content').innerText.replace('Salin', '').replace('Baca', '').trim();
     navigator.clipboard.writeText(text).then(() => {
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
         setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
     });
+}
+
+// FITUR SUARA (TEXT TO SPEECH)
+function speakText(btn) {
+    const text = btn.closest('.bubble-content').innerText.replace('Salin', '').replace('Baca', '').trim();
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+}
+
+// FITUR SIMPAN CHAT HISTORY KE FILE TXT
+function downloadChatHistory() {
+    const chatText = document.getElementById('chatHistory').innerText;
+    const blob = new Blob([chatText], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Chat-ReyMultiAIHub-${Date.now()}.txt`;
+    a.click();
 }
 
 function escapeHtml(text) {
