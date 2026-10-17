@@ -1,12 +1,4 @@
-const correctKey = "adminrey472";
-let isVipUser = false;
-let attachedFileContent = null;
-let attachedFileName = "";
-let extractedImageText = "";
-let isImageGenMode = false;
-let isProcessingOCR = false;
-let tesseractWorker = null;
-
+// 1. INSIALISASI TESSERACT LEBIH CEPAT DI BACKGROUND
 window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('lockSection').style.display = 'flex';
     document.getElementById('mainSection').style.display = 'none';
@@ -18,67 +10,34 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     setupAppListeners();
 
-    try {
-        tesseractWorker = await Tesseract.createWorker('ind+eng');
-    } catch(e) {}
+    // Mulai inisialisasi Tesseract di background agar saat jepret foto sudah siap
+    setTimeout(initOCRWorker, 1000);
 });
 
-function handleLogin() {
-    const keyInput = document.getElementById('keyInput');
-    const errorMsg = document.getElementById('errorMsg');
-    if (keyInput.value.trim() === correctKey) {
-        document.getElementById('lockSection').style.display = 'none';
-        document.getElementById('mainSection').style.display = 'flex';
-        checkVipStatus();
-    } else {
-        errorMsg.innerText = "Password Salah, bray!";
-        keyInput.value = "";
-        keyInput.focus();
-    }
-}
-
-function generateFiveMinToken() {
-    const expireTime = Date.now() + (5 * 60 * 1000);
-    const token = `VIP-${expireTime.toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const resBox = document.getElementById('genTokenResult');
-    resBox.style.display = 'block';
-    resBox.innerText = token;
-}
-
-function verifyVipToken(tokenString) {
+async function initOCRWorker() {
     try {
-        const parts = tokenString.trim().split('-');
-        if (parts.length !== 3 || parts[0] !== 'VIP') return { valid: false };
-        const expireTime = parseInt(parts[1], 36);
-        if (Date.now() > expireTime) return { valid: false };
-        return { valid: true, expireDate: new Date(expireTime) };
-    } catch (e) { return { valid: false }; }
-}
-
-function checkVipStatus() {
-    const savedExpire = localStorage.getItem('quantum_vip_expire');
-    if (savedExpire && Date.now() < parseInt(savedExpire)) {
-        isVipUser = true;
-        document.getElementById('brandLogo').classList.add('vip-glow');
-        document.getElementById('userStatusTag').innerText = `© Rey472 • ⚡ VIP ACTIVE`;
-        document.getElementById('vipBtn').classList.add('active-vip');
-        document.getElementById('sendBtn').classList.add('vip-btn');
+        if (!tesseractWorker) {
+            tesseractWorker = await Tesseract.createWorker('ind+eng', 1, {
+                logger: m => {
+                    if (isProcessingOCR && m.status === 'recognizing text') {
+                        const pct = Math.round((m.progress || 0) * 100);
+                        showAttachmentPreview(`⚡ <i class="fa-solid fa-bolt fa-spin"></i> Memindai teks: ${pct}%`);
+                    }
+                }
+            });
+        }
+    } catch(e) {
+        console.error("OCR Init Error:", e);
     }
 }
 
-function openFileInput(acceptType, isCamera = false) {
-    const input = isCamera ? document.getElementById('cameraInput') : document.getElementById('fileInput');
-    if(!isCamera) input.accept = acceptType;
-    input.click();
-    document.getElementById('featureMenu').style.display = 'none';
-}
-
+// 2. KOMPRESI GAMBAR YANG MEMPERJELAS TEKS (TIDAK BURAM)
 function quickCompressImage(base64Image) {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 500;
+            const MAX_WIDTH = 1200; // Resolusi dinaikkan dari 500 ke 1200 agar teks tajam
             let width = img.width;
             let height = img.height;
             if (width > MAX_WIDTH) {
@@ -88,13 +47,16 @@ function quickCompressImage(base64Image) {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
+            
+            // Gambar ke canvas dengan kualitas tajam
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
+            resolve(canvas.toDataURL('image/jpeg', 0.85)); // Kualitas 0.85
         };
         img.src = base64Image;
     });
 }
 
+// 3. BACA SELURUH ISI TEKS FOTO (TIDAK HANYA 2 BARIS)
 async function handleFileSelected(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -106,7 +68,7 @@ async function handleFileSelected(event) {
         const sendBtn = document.getElementById('sendBtn');
         sendBtn.disabled = true;
         isProcessingOCR = true;
-        showAttachmentPreview(`⚡ <i class="fa-solid fa-bolt fa-spin"></i> Pemindaian Kilat...`);
+        showAttachmentPreview(`⚡ <i class="fa-solid fa-bolt fa-spin"></i> Menyiapkan pemindai...`);
         
         reader.onload = async function(e) {
             const compressedBase64 = await quickCompressImage(e.target.result);
@@ -114,16 +76,18 @@ async function handleFileSelected(event) {
             
             try {
                 if (!tesseractWorker) {
-                    tesseractWorker = await Tesseract.createWorker('ind+eng');
+                    await initOCRWorker();
                 }
                 const ret = await tesseractWorker.recognize(compressedBase64);
-                if (ret.data.text && ret.data.text.trim().length > 2) {
-                    const lines = ret.data.text.split('\n').filter(l => l.trim().length > 2);
-                    extractedImageText = lines.slice(0, 2).join(' ');
-                    showAttachmentPreview(`✅ ⚡ Teks Terbaca Kilat: "${extractedImageText.substring(0, 25)}..."`);
+                
+                // AMBIL SELURUH TEKS, BUKAN CUMA 2 BARIS!
+                if (ret.data.text && ret.data.text.trim().length > 3) {
+                    extractedImageText = ret.data.text.trim();
+                    const ringkasan = extractedImageText.replace(/\s+/g, ' ').substring(0, 30);
+                    showAttachmentPreview(`✅ Teks Terbaca: "${ringkasan}..."`);
                 } else {
-                    extractedImageText = "Teks tidak jelas";
-                    showAttachmentPreview(`📷 Foto Terlampir`);
+                    extractedImageText = "";
+                    showAttachmentPreview(`📷 Foto Terlampir (Teks tidak terdeteksi otomatis)`);
                 }
             } catch (err) {
                 extractedImageText = "";
@@ -138,100 +102,31 @@ async function handleFileSelected(event) {
         reader.onload = function(e) {
             attachedFileContent = { type: 'text', data: e.target.result };
             extractedImageText = "";
-            showAttachmentPreview(`📄 File: ${file.name}`);
+            showAttachmentPreview(`📄 Berkas: ${file.name}`);
         };
         reader.readAsText(file);
     }
 }
 
-function showAttachmentPreview(text) {
-    const preview = document.getElementById('attachmentPreview');
-    document.getElementById('attachmentName').innerHTML = text;
-    preview.style.display = 'flex';
-}
-
-function clearAttachment() {
-    attachedFileContent = null;
-    attachedFileName = "";
-    extractedImageText = "";
-    isProcessingOCR = false;
-    document.getElementById('sendBtn').disabled = false;
-    document.getElementById('attachmentPreview').style.display = 'none';
-    document.getElementById('fileInput').value = '';
-    document.getElementById('cameraInput').value = '';
-}
-
-function setModeImageGen() {
-    isImageGenMode = true;
-    usePreset('Buat gambar: ');
-    document.getElementById('promptInput').placeholder = 'Ketik deskripsi gambar...';
-}
-
-function setupAppListeners() {
-    const sendBtn = document.getElementById('sendBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const promptInput = document.getElementById('promptInput');
-    const vipBtn = document.getElementById('vipBtn');
-    const safelinkModal = document.getElementById('safelinkModal');
-    const closeModalText = document.getElementById('closeModalText');
-    const activateVipBtn = document.getElementById('activateVipBtn');
-    const toggleMenuBtn = document.getElementById('toggleMenuBtn');
-    const featureMenu = document.getElementById('featureMenu');
-
-    if (toggleMenuBtn && featureMenu) {
-        toggleMenuBtn.addEventListener('click', () => {
-            featureMenu.style.display = featureMenu.style.display === 'flex' ? 'none' : 'flex';
-        });
-    }
-    if (vipBtn) vipBtn.addEventListener('click', () => { safelinkModal.style.display = 'flex'; });
-    if (closeModalText) closeModalText.addEventListener('click', () => { safelinkModal.style.display = 'none'; });
-
-    if (activateVipBtn) {
-        activateVipBtn.addEventListener('click', () => {
-            const token = document.getElementById('tokenInput').value.trim();
-            const result = verifyVipToken(token);
-            if (result.valid) {
-                localStorage.setItem('quantum_vip_expire', result.expireDate.getTime().toString());
-                safelinkModal.style.display = 'none';
-                checkVipStatus();
-                alert(`🎉 VIP AKTIF!`);
-            } else { alert(`❌ Token Salah!`); }
-        });
-    }
-
-    if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
-    if (clearBtn) clearBtn.addEventListener('click', clearChat);
-    if (promptInput) {
-        promptInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); }
-        });
-    }
-}
-
-function usePreset(prefix) {
-    const promptInput = document.getElementById('promptInput');
-    promptInput.value = prefix;
-    promptInput.focus();
-    document.getElementById('featureMenu').style.display = 'none';
-}
-
-function clearChat() {
-    document.getElementById('chatHistory').innerHTML = `
-        <div class="chat-bubble ai">
-            <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
-            <div class="bubble-content"><strong>Rey Multi AI Hub</strong><br>Riwayat dibersihkan.</div>
-        </div>`;
-    clearAttachment();
-}
-
-// BOT STREAMING ENGINE (EFEK KETIK KILAT STREAMING REAL-TIME)
+// 4. RESPON CEPAT DENGAN TIMEOUT 7 DETIK (ANTI-LEMOT)
 async function streamAIResponse(promptText, selectedModel, targetContainer) {
     let fullPrompt = promptText;
+    
+    // Format prompt rapi untuk soal/teks dari foto
     if (attachedFileContent && attachedFileContent.type === 'image') {
-        fullPrompt = `Teks dari foto: "${extractedImageText || 'Tidak terbaca'}". Perintah: "${promptText || 'Jawab singkat dan langsung'}".`;
+        if (extractedImageText) {
+            fullPrompt = `Berikut adalah teks hasil pemindaian foto/kamera:\n"""\n${extractedImageText}\n"""\n\nInstruksi Pengguna: ${promptText || 'Jawab dan selesaikan isi teks/soal di atas secara lengkap, tepat, dan jelas dalam bahasa Indonesia.'}`;
+        } else {
+            fullPrompt = `Pengguna mengunggah foto. Pertanyaan pengguna: ${promptText || 'Tolong jelaskan atau jawab apa yang ada di foto ini.'}`;
+        }
     }
 
     const headerDecoration = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    const systemPrompt = "Kamu adalah asisten AI cerdas dari Rey Multi AI Hub. Wajib berikan jawaban yang lengkap, tepat, akurat, dan mudah dipahami dalam Bahasa Indonesia.";
+
+    // Batas waktu timeout 7 detik untuk streaming agar tidak menggantung
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
 
     try {
         const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
@@ -239,10 +134,16 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: selectedModel || 'openai',
-                messages: [{ role: "user", content: fullPrompt }],
-                stream: true // MENGAKTIFKAN STREAMING
-            })
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: fullPrompt }
+                ],
+                stream: true
+            }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok && response.body) {
             const reader = response.body.getReader();
@@ -263,7 +164,6 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
                             const content = parsed.choices?.[0]?.delta?.content || "";
                             accumulatedText += content;
 
-                            // BIKIN EFEK KETIK LANGSUNG DI LAYAR
                             targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + `
                                 <div class="copy-action">
                                     <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
@@ -276,11 +176,14 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
             }
             if (accumulatedText.trim() !== "") return;
         }
-    } catch (e) {}
+    } catch (e) {
+        console.log("Streaming lambat atau timeout, beralih ke jalur turbo kilat...");
+    }
 
-    // FALLBACK CEPAT JIKA STREAMING GAGAL
+    // JALUR TURBO SUPER CEPAT (FALLBACK KILAT JIKA STREAMING MACET)
     try {
-        const fallbackRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`);
+        const prefix = encodeURIComponent("Jawablah secara tepat dalam bahasa Indonesia: ");
+        const fallbackRes = await fetch(`https://text.pollinations.ai/${prefix}${encodeURIComponent(fullPrompt)}?model=openai`);
         if (fallbackRes.ok) {
             const text = await fallbackRes.text();
             targetContainer.innerHTML = marked.parse(headerDecoration + text) + `
@@ -293,87 +196,5 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         }
     } catch (e) {}
 
-    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh bray, bot sedang memulihkan koneksi! Coba kirim ulang ya.");
-}
-
-async function sendPrompt() {
-    if (isProcessingOCR) return;
-
-    const model = document.getElementById('modelSelect').value;
-    const promptInput = document.getElementById('promptInput');
-    const userPrompt = promptInput.value.trim();
-    const chatHistory = document.getElementById('chatHistory');
-    const sendBtn = document.getElementById('sendBtn');
-    const featureMenu = document.getElementById('featureMenu');
-    
-    if (!userPrompt && !attachedFileContent) return;
-    if (featureMenu) featureMenu.style.display = 'none';
-
-    let displayUserMessage = escapeHtml(userPrompt);
-    if (attachedFileContent && attachedFileContent.type === 'image') {
-        displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 180px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Artikan teks');
-    }
-
-    promptInput.value = '';
-
-    const userBubble = document.createElement('div');
-    userBubble.className = 'chat-bubble user';
-    userBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-user"></i></div><div class="bubble-content">${displayUserMessage}</div>`;
-    chatHistory.appendChild(userBubble);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-
-    const aiBubble = document.createElement('div');
-    aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
-    aiBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Bot sedang mengetik...</span></div>`;
-    chatHistory.appendChild(aiBubble);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-
-    sendBtn.disabled = true;
-
-    const targetContainer = aiBubble.querySelector('.bubble-content');
-
-    if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
-        const imgP = userPrompt.replace(/buat gambar:/i, '').trim();
-        const finalOutput = `Hasil Generate: **"${imgP}"**\n\n![AI Image](https://image.pollinations.ai/prompt/${encodeURIComponent(imgP)}?width=1024&height=1024&nologo=true)`;
-        targetContainer.innerHTML = marked.parse(`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput);
-        isImageGenMode = false;
-    } else {
-        await streamAIResponse(userPrompt, model, targetContainer);
-    }
-
-    clearAttachment();
-
-    sendBtn.disabled = false;
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-    promptInput.focus();
-}
-
-function copyToClipboard(btn) {
-    const text = btn.closest('.bubble-content').innerText.replace('Salin', '').replace('Baca', '').trim();
-    navigator.clipboard.writeText(text).then(() => {
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
-        setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
-    });
-}
-
-function speakText(btn) {
-    const text = btn.closest('.bubble-content').innerText.replace('Salin', '').replace('Baca', '').trim();
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
-}
-
-function downloadChatHistory() {
-    const chatText = document.getElementById('chatHistory').innerText;
-    const blob = new Blob([chatText], { type: 'text/plain;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Chat-ReyMultiAIHub-${Date.now()}.txt`;
-    a.click();
-}
-
-function escapeHtml(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh, server sedang padat. Silakan tekan tombol kirim sekali lagi ya!");
 }
