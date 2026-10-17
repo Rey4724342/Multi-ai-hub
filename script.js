@@ -228,6 +228,19 @@ function setupAppListeners() {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); }
         });
     }
+
+    const modelSelect = document.getElementById('modelSelect');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', () => {
+            const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+            showAttachmentPreview(`🤖 Model AI aktif: <strong>${modelName}</strong>`);
+            setTimeout(() => {
+                if (!attachedFileContent) {
+                    document.getElementById('attachmentPreview').style.display = 'none';
+                }
+            }, 2500);
+        });
+    }
 }
 
 function usePreset(prefix) {
