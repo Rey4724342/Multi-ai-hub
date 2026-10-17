@@ -269,27 +269,31 @@ function getActionButtonsHTML() {
     `;
 }
 
-// MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE)
+// MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE - TANPA LAG)
 function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHistory, callback) {
     let cursor = 0;
     const total = fullText.length;
-    // Kecepatan adaptif kilat: 4-8 karakter per frame
-    const step = Math.max(4, Math.ceil(total / 60));
+    // Lompatan karakter adaptif: selesai dalam 1 detik berapa pun panjang teksnya!
+    const step = Math.max(8, Math.ceil(total / 35));
     
+    // Tampilkan container ringan untuk mengetik cepat tanpa membebani browser
+    targetContainer.innerHTML = `<div class="live-typing-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>`;
+    const box = targetContainer.querySelector('.live-typing-box');
+
     const interval = setInterval(() => {
         cursor += step;
         if (cursor >= total) {
             cursor = total;
             clearInterval(interval);
+            // Hanya parse Markdown SATU KALI di akhir agar format rapi tanpa ngelag!
             targetContainer.innerHTML = marked.parse(headerDecoration + fullText) + getActionButtonsHTML();
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
             if (callback) callback();
         } else {
-            const currentSlice = fullText.substring(0, cursor);
-            targetContainer.innerHTML = marked.parse(headerDecoration + currentSlice) + `<span style="display:inline-block; margin-left:3px; color:var(--accent,#f59e0b); font-weight:bold;">▌</span>`;
+            box.textContent = headerDecoration + fullText.substring(0, cursor) + " ▌";
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-    }, 12); // Mengetik sangat kilat tiap 12 milidetik!
+    }, 15); // Render super cepat 60 FPS
 }
 
 // MESIN STREAMING & RESPON KILAT REAL-TIME
@@ -335,6 +339,8 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         if (response.ok && response.body) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
+            targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>`;
+            const streamBox = targetContainer.querySelector('.live-stream-box');
             let renderPending = false;
 
             while (true) {
@@ -352,11 +358,10 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
                             if (content) {
                                 accumulatedText += content;
 
-                                // Throttle render menggunakan requestAnimationFrame (60 FPS super smooth)
                                 if (!renderPending) {
                                     renderPending = true;
                                     requestAnimationFrame(() => {
-                                        targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + `<span style="display:inline-block; margin-left:3px; color:var(--accent,#f59e0b); font-weight:bold;">▌</span>`;
+                                        streamBox.textContent = headerDecoration + accumulatedText + " ▌";
                                         if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
                                         renderPending = false;
                                     });
