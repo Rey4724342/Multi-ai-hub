@@ -38,7 +38,9 @@ body { background: var(--bg-color); color: var(--text-main); margin: 0; padding:
 .brand-text p { font-size: 10px; margin: 0; color: var(--text-muted); font-family: monospace; }
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
-select.model-select { background: rgba(11, 15, 23, 0.85); color: #fff; border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; font-size: 11px; outline: none; cursor: pointer; max-width: 130px; }
+select.model-select { background: rgba(11, 15, 23, 0.95); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; outline: none; cursor: pointer; max-width: 165px; text-overflow: ellipsis; }
+select.model-select optgroup { background: #0f172a; color: #94a3b8; font-size: 10px; font-weight: bold; }
+select.model-select option { background: #0b0f17; color: #f8fafc; font-size: 11px; padding: 6px; }
 
 .safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 .safelink-btn.active-vip { background: linear-gradient(135deg, #f59e0b, #d97706); }
@@ -103,3 +105,4 @@ select.model-select { background: rgba(11, 15, 23, 0.85); color: #fff; border: 1
 
 .footer-tag { text-align: center; font-size: 10px; color: var(--text-muted); margin-top: 6px; font-family: monospace; }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
