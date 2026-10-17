@@ -311,7 +311,14 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
     }
 
     const headerDecoration = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    const systemPrompt = "Kamu adalah asisten AI dari Rey Multi AI Hub. Wajib dan selalu berikan setiap jawaban, penjelasan, atau pemecahan soal dalam Bahasa Indonesia yang akurat, jelas, dan mudah dipahami, kecuali jika pengguna secara khusus meminta bahasa lain.";
+    
+    // SISTEM PROMPT PRESISI TINGGI (ANTI-SALAH & ANTI-HALUSINASI)
+    const systemPrompt = `Kamu adalah asisten AI super cerdas, sangat teliti, dan berpengetahuan luas dari Rey Multi AI Hub.
+Pedoman WAJIB demi AKURASI MAKSIMAL:
+1. AKURASI MUTLAK & FAKTA NYATA: Setiap jawaban, tanggal, nama, rumus matematika, dan penjelasan ilmiah harus 100% tepat, akurat, dan dapat diverifikasi. Jangan pernah mengarang data, rumus, atau fakta fiktif.
+2. PENJELASAN SISTEMATIS (STEP-BY-STEP): Untuk soal matematika, logika, ujian/PR, atau kode pemrograman, jabarkan langkah-langkah penyelesaiannya secara runtut, logis, dan teliti hingga ke kesimpulan akhir.
+3. KOREKSI CERDAS TEKS KAMERA/OCR: Jika teks berasal dari foto kamera, perbaiki otomatis kemungkinan salah baca huruf atau typo akibat bayangan/kualitas kamera berdasarkan konteks kalimat aslinya.
+4. BAHASA INDONESIA YANG NATURAL: Gunakan Bahasa Indonesia yang jelas, profesional, dan mudah dipahami pengguna.`;
 
     // Batas waktu timeout cepat (3.5 detik) agar tidak menggantung lama jika server antre
     const controller = new AbortController();
@@ -329,6 +336,7 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
                     { role: "system", content: systemPrompt },
                     { role: "user", content: fullPrompt }
                 ],
+                temperature: 0.2, // Nilai rendah (0.2) agar jawaban fokus pada fakta presisi, bukan mengarang
                 stream: true
             }),
             signal: controller.signal
