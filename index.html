@@ -12,31 +12,31 @@
 </head>
 <body>
 
-    <!-- LOCK SCREEN GATE -->
+    <!-- GERBANG SISTEM TERKUNCI -->
     <div id="lockSection">
         <div class="lock-box">
             <img src="1791994468675.jpg" alt="Logo" class="login-logo" />
-            <div class="lock-title">[SYSTEM LOCKED🔒]</div>
-            <p class="lock-subtitle">Rey Multi AI Hub Password Gate</p>
-            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Password" autocomplete="current-password" />
+            <div class="lock-title">[SISTEM TERKUNCI🔒]</div>
+            <p class="lock-subtitle">Gerbang Kata Sandi Rey Multi AI Hub</p>
+            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Kata Sandi" autocomplete="current-password" />
             <button class="lock-btn" onclick="handleLogin()">MASUK PORTAL</button>
             <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
         </div>
     </div>
 
-    <!-- MAIN APP INTERFACE -->
+    <!-- TAMPILAN UTAMA APLIKASI -->
     <div id="mainSection">
         <div class="app-header">
             <div class="brand-info">
                 <img src="1791994468675.jpg" id="brandLogo" class="header-brand-logo" alt="Logo" />
                 <div class="brand-text">
                     <h1>Rey Multi AI Hub</h1>
-                    <p id="userStatusTag">© Rey472 • Turbo Speed 🔥</p>
+                    <p id="userStatusTag">© Rey472 • Kecepatan Turbo 🔥</p>
                 </div>
             </div>
             <div class="header-actions">
                 <button class="safelink-btn" id="vipBtn">
-                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">VIP Akses</span>
+                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">Akses VIP</span>
                 </button>
                 <select id="modelSelect" class="model-select">
                     <option value="openai">ChatGPT (GPT-4o)</option>
@@ -44,14 +44,15 @@
                     <option value="gemini">Gemini Pro</option>
                     <option value="claude">Claude 3.5</option>
                 </select>
-                <button class="icon-btn" id="clearBtn" title="Reset Chat"><i class="fa-solid fa-trash-can"></i></button>
+                <button class="icon-btn" id="clearBtn" title="Hapus Riwayat Obrolan"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </div>
 
         <div class="presets-bar">
-            <div class="preset-chip" onclick="usePreset('Artikan singkat teks ini: ')"><i class="fa-solid fa-language"></i> Arti Singkat</div>
-            <div class="preset-chip" onclick="usePreset('Jawab asal dan random dari teks ini: ')"><i class="fa-solid fa-dice"></i> Jawab Acak/Asal</div>
+            <div class="preset-chip" onclick="usePreset('Terjemahkan ke bahasa Indonesia: ')"><i class="fa-solid fa-language"></i> Terjemahkan ke Indo</div>
+            <div class="preset-chip" onclick="usePreset('Artikan singkat teks ini ke bahasa Indonesia: ')"><i class="fa-solid fa-book-open"></i> Arti Singkat</div>
             <div class="preset-chip" onclick="usePreset('Rangkum 1 kalimat saja dari teks ini: ')"><i class="fa-solid fa-bolt"></i> Rangkum 1 Baris</div>
+            <div class="preset-chip" onclick="usePreset('Jawab asal dan santai dari teks ini: ')"><i class="fa-solid fa-dice"></i> Jawab Acak</div>
         </div>
 
         <div id="chatHistory" class="chat-container">
@@ -59,7 +60,7 @@
                 <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
                 <div class="bubble-content">
                     <strong>Rey Multi AI Hub Turbo ⚡</strong><br>
-                    Sistem pemindaian kilat & turbo server aktif! Silakan upload foto dan tanyakan.
+                    Sistem pemindaian kilat & server turbo aktif! Silakan unggah foto atau ajukan pertanyaan dalam bahasa Indonesia.
                 </div>
             </div>
         </div>
@@ -81,11 +82,11 @@
                 </div>
                 <div class="feature-icon-item" onclick="openFileInput('.txt,.pdf,.js,.py,.html,.css,.json')">
                     <i class="fa-solid fa-paperclip"></i>
-                    <span>File</span>
+                    <span>Berkas</span>
                 </div>
                 <div class="feature-icon-item" onclick="downloadChatHistory()">
                     <i class="fa-solid fa-file-arrow-down"></i>
-                    <span>Simpan Chat</span>
+                    <span>Simpan Obrolan</span>
                 </div>
             </div>
 
@@ -93,8 +94,8 @@
                 <div class="feature-list-item" onclick="setModeImageGen()">
                     <i class="fa-solid fa-palette"></i>
                     <div class="feature-list-text">
-                        <h4>Buat Gambar (AI Image)</h4>
-                        <p>Generate gambar realistis langsung dari teks</p>
+                        <h4>Buat Gambar (Gambar AI)</h4>
+                        <p>Hasilkan gambar realistis langsung dari teks deskripsi</p>
                     </div>
                 </div>
             </div>
@@ -104,7 +105,7 @@
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileSelected(event)" />
 
         <div id="attachmentPreview" class="attachment-preview">
-            <span id="attachmentName"><i class="fa-solid fa-paperclip"></i> File terlampir</span>
+            <span id="attachmentName"><i class="fa-solid fa-paperclip"></i> Berkas terlampir</span>
             <button onclick="clearAttachment()"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
@@ -114,7 +115,7 @@
                 <textarea id="promptInput" rows="1" placeholder="Ketik pesan atau pilih fitur (+) di samping..."></textarea>
                 <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-            <div class="footer-tag">Rey Multi AI Hub • Turbo Edition by Rey472</div>
+            <div class="footer-tag">Rey Multi AI Hub • Edisi Turbo oleh Rey472</div>
         </div>
     </div>
 
@@ -127,7 +128,7 @@
                 <button class="lock-btn" id="activateVipBtn" style="margin-top: 8px; padding: 8px;">AKTIFKAN FITUR VIP</button>
             </div>
             <div class="gen-box">
-                <button class="gen-btn" onclick="generateFiveMinToken()">Generate Token 5 Menit</button>
+                <button class="gen-btn" onclick="generateFiveMinToken()">Buat Token 5 Menit</button>
                 <div id="genTokenResult" class="gen-result" style="display:none; margin-top:8px; font-family:monospace; color:#f59e0b;"></div>
             </div>
             <p style="margin-top: 14px; cursor: pointer; color: var(--text-muted); font-size: 11px;" id="closeModalText">Batal / Kembali</p>
