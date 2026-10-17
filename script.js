@@ -12,6 +12,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('lockSection').style.display = 'flex';
     document.getElementById('mainSection').style.display = 'none';
 
+    // Jalankan animasi partikel wallpaper interaktif
+    initBackgroundParticles();
+
     const keyInput = document.getElementById('keyInput');
     if (keyInput) {
         keyInput.focus();
@@ -22,6 +25,73 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Inisialisasi Tesseract OCR di latar belakang agar siap pakai saat pengguna mengambil foto
     setTimeout(initOCRWorker, 1000);
 });
+
+// ANIMASI PARTIKEL WALLPAPER FUTURISTIK INTERAKTIF
+function initBackgroundParticles() {
+    const canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+    const particles = [];
+    const count = Math.min(50, Math.floor((width * height) / 18000));
+
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: (Math.random() - 0.5) * 0.6,
+            radius: Math.random() * 2 + 1,
+            color: Math.random() > 0.4 ? 'rgba(56, 189, 248, ' : 'rgba(139, 92, 246, '
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+            if (p.y < 0) p.y = height;
+            if (p.y > height) p.y = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color + '0.6)';
+            ctx.fill();
+
+            // Hubungkan garis halus jika partikel saling berdekatan
+            for (let j = i + 1; j < particles.length; j++) {
+                const p2 = particles[j];
+                const dx = p.x - p2.x;
+                const dy = p.y - p2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 110) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(56, 189, 248, ${0.18 * (1 - dist / 110)})`;
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+}
 
 async function initOCRWorker() {
     try {
@@ -43,14 +113,27 @@ async function initOCRWorker() {
 function handleLogin() {
     const keyInput = document.getElementById('keyInput');
     const errorMsg = document.getElementById('errorMsg');
+    const lockSection = document.getElementById('lockSection');
+    const mainSection = document.getElementById('mainSection');
+
     if (keyInput.value.trim() === correctKey) {
-        document.getElementById('lockSection').style.display = 'none';
-        document.getElementById('mainSection').style.display = 'flex';
-        checkVipStatus();
+        lockSection.classList.add('fade-out');
+        setTimeout(() => {
+            lockSection.style.display = 'none';
+            mainSection.style.display = 'flex';
+            checkVipStatus();
+        }, 350);
     } else {
         errorMsg.innerText = "Kata sandi salah, silakan coba lagi!";
         keyInput.value = "";
         keyInput.focus();
+        
+        // Efek getar pada box login jika salah sandi
+        const box = document.querySelector('.lock-box');
+        if (box) {
+            box.classList.add('shake');
+            setTimeout(() => box.classList.remove('shake'), 500);
+        }
     }
 }
 
