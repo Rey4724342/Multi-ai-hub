@@ -246,11 +246,45 @@ function clearChat() {
     clearAttachment();
 }
 
-// MESIN STREAMING DENGAN TIMEOUT & PERINTAH BAHASA INDONESIA
+// ACTION BUTTONS TEMPLATE
+function getActionButtonsHTML() {
+    return `
+        <div class="copy-action">
+            <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
+            <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
+        </div>
+    `;
+}
+
+// MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE)
+function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHistory, callback) {
+    let cursor = 0;
+    const total = fullText.length;
+    // Kecepatan adaptif kilat: 4-8 karakter per frame
+    const step = Math.max(4, Math.ceil(total / 60));
+    
+    const interval = setInterval(() => {
+        cursor += step;
+        if (cursor >= total) {
+            cursor = total;
+            clearInterval(interval);
+            targetContainer.innerHTML = marked.parse(headerDecoration + fullText) + getActionButtonsHTML();
+            if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
+            if (callback) callback();
+        } else {
+            const currentSlice = fullText.substring(0, cursor);
+            targetContainer.innerHTML = marked.parse(headerDecoration + currentSlice) + `<span style="display:inline-block; margin-left:3px; color:var(--accent,#f59e0b); font-weight:bold;">▌</span>`;
+            if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    }, 12); // Mengetik sangat kilat tiap 12 milidetik!
+}
+
+// MESIN STREAMING & RESPON KILAT REAL-TIME
 async function streamAIResponse(promptText, selectedModel, targetContainer) {
+    const chatHistory = document.getElementById('chatHistory');
     let fullPrompt = promptText;
     
-    // Format prompt yang akurat saat pengguna mengunggah foto
+    // Format prompt rapi jika pengguna mengirim foto
     if (attachedFileContent && attachedFileContent.type === 'image') {
         if (extractedImageText) {
             fullPrompt = `Teks hasil pemindaian foto/kamera:\n"""\n${extractedImageText}\n"""\n\nPerintah Pengguna: ${promptText || 'Tolong jawab, selesaikan, atau jelaskan isi teks/soal pada foto tersebut secara lengkap dan tepat dalam bahasa Indonesia.'}`;
@@ -262,9 +296,11 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
     const headerDecoration = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     const systemPrompt = "Kamu adalah asisten AI dari Rey Multi AI Hub. Wajib dan selalu berikan setiap jawaban, penjelasan, atau pemecahan soal dalam Bahasa Indonesia yang akurat, jelas, dan mudah dipahami, kecuali jika pengguna secara khusus meminta bahasa lain.";
 
-    // Batas waktu timeout 7 detik agar tidak menggantung jika server AI antre
+    // Batas waktu timeout cepat (3.5 detik) agar tidak menggantung lama jika server antre
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    let accumulatedText = "";
 
     try {
         const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
@@ -286,7 +322,7 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         if (response.ok && response.body) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
-            let accumulatedText = "";
+            let renderPending = false;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -300,41 +336,51 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
                         try {
                             const parsed = JSON.parse(line.replace('data: ', ''));
                             const content = parsed.choices?.[0]?.delta?.content || "";
-                            accumulatedText += content;
+                            if (content) {
+                                accumulatedText += content;
 
-                            targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + `
-                                <div class="copy-action">
-                                    <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
-                                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
-                                </div>
-                            `;
+                                // Throttle render menggunakan requestAnimationFrame (60 FPS super smooth)
+                                if (!renderPending) {
+                                    renderPending = true;
+                                    requestAnimationFrame(() => {
+                                        targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + `<span style="display:inline-block; margin-left:3px; color:var(--accent,#f59e0b); font-weight:bold;">▌</span>`;
+                                        if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
+                                        renderPending = false;
+                                    });
+                                }
+                            }
                         } catch (e) {}
                     }
                 }
             }
-            if (accumulatedText.trim() !== "") return;
+
+            if (accumulatedText.trim() !== "") {
+                targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + getActionButtonsHTML();
+                if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
+                return;
+            }
         }
     } catch (e) {
-        console.log("Streaming lambat atau timeout, otomatis pindah ke jalur turbo kilat...");
+        console.log("Beralih ke mesin turbo kilat...");
     }
 
-    // JALUR TURBO KILAT (FALLBACK OTOMATIS)
+    // JALUR KILAT TURBO ENGINE (JIKA STREAMING MACET / TIMEOUT)
     try {
+        const randomSeed = Math.floor(Math.random() * 999999);
         const indoPrefix = encodeURIComponent("Jawablah dalam bahasa Indonesia dengan lengkap dan tepat: ");
-        const fallbackRes = await fetch(`https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=openai`);
+        const fallbackUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=${selectedModel || 'openai'}&seed=${randomSeed}`;
+        
+        const fallbackRes = await fetch(fallbackUrl);
         if (fallbackRes.ok) {
             const text = await fallbackRes.text();
-            targetContainer.innerHTML = marked.parse(headerDecoration + text) + `
-                <div class="copy-action">
-                    <button class="copy-btn" onclick="speakText(this)"><i class="fa-solid fa-volume-high"></i> Baca</button>
-                    <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
-                </div>
-            `;
-            return;
+            if (text && text.trim().length > 0) {
+                playTurboTypewriter(text, headerDecoration, targetContainer, chatHistory);
+                return;
+            }
         }
     } catch (e) {}
 
-    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh bray, koneksi AI sedang padat. Silakan tekan tombol kirim sekali lagi ya!");
+    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh bray, koneksi AI sedang padat. Silakan tekan tombol kirim sekali lagi ya!") + getActionButtonsHTML();
 }
 
 async function sendPrompt() {
