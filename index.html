@@ -12,15 +12,34 @@
 </head>
 <body>
 
-    <!-- GERBANG SISTEM TERKUNCI -->
+    <!-- ANIMASI LATAR BELAKANG PARTIKEL & GLOW ORB -->
+    <canvas id="bgCanvas"></canvas>
+    <div class="ambient-glow orb-1"></div>
+    <div class="ambient-glow orb-2"></div>
+    <div class="ambient-glow orb-3"></div>
+
+    <!-- GERBANG SISTEM TERKUNCI FUTURISTIK -->
     <div id="lockSection">
         <div class="lock-box">
-            <img src="1791994468675.jpg" alt="Logo" class="login-logo" />
+            <div class="logo-ring-wrapper">
+                <div class="neon-radar-ring"></div>
+                <img src="1791994468675.jpg" alt="Logo" class="login-logo" />
+            </div>
+            <div class="security-badge">
+                <span class="live-pulse-dot"></span>
+                <span>SECURITY PORTAL ACTIVE</span>
+            </div>
             <div class="lock-title">[SISTEM TERKUNCI🔒]</div>
             <p class="lock-subtitle">Gerbang Kata Sandi Rey Multi AI Hub</p>
-            <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Kata Sandi" autocomplete="current-password" />
-            <button class="lock-btn" onclick="handleLogin()">MASUK PORTAL</button>
-            <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
+            <div class="input-wrapper">
+                <i class="fa-solid fa-key input-icon"></i>
+                <input type="password" id="keyInput" class="lock-input" placeholder="Masukkan Kata Sandi Portal..." autocomplete="current-password" />
+            </div>
+            <button class="lock-btn" onclick="handleLogin()">
+                <span>MASUK PORTAL</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <p id="errorMsg" style="color: #ef4444; font-size: 12px; margin-top: 10px; font-weight: bold; min-height: 16px;"></p>
         </div>
     </div>
 
