@@ -7,10 +7,41 @@ let isImageGenMode = false;
 let isProcessingOCR = false;
 let tesseractWorker = null;
 
+// VARIABEL FITUR BARU (PWA, SUARA, VOICE, PERSONA)
+let isSfxEnabled = localStorage.getItem('rey_sfx') !== 'false';
+let speechRecognizer = null;
+let isVoiceRecording = false;
+let pwaDeferredPrompt = null;
+let currentPersona = 'standard';
+let audioCtx = null;
+
+// REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail:', err));
+    });
+}
+
+// TANGKAP EVENT INSTALASI PWA
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    pwaDeferredPrompt = e;
+    const installBtn = document.getElementById('installPwaBtn');
+    if (installBtn) installBtn.style.display = 'inline-flex';
+});
+
 // INISIALISASI AWAL
 window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('lockSection').style.display = 'flex';
     document.getElementById('mainSection').style.display = 'none';
+
+    // Set status tombol audio di UI
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    const sfxIcon = document.getElementById('sfxIcon');
+    if (!isSfxEnabled && sfxBtn && sfxIcon) {
+        sfxBtn.classList.add('muted');
+        sfxIcon.className = 'fa-solid fa-volume-xmark';
+    }
 
     // Jalankan animasi partikel wallpaper interaktif
     initBackgroundParticles();
@@ -136,6 +167,7 @@ function handleLogin() {
     const mainSection = document.getElementById('mainSection');
 
     if (keyInput.value.trim() === correctKey) {
+        playSfx('login');
         lockSection.classList.add('fade-out');
         setTimeout(() => {
             lockSection.style.display = 'none';
@@ -143,6 +175,7 @@ function handleLogin() {
             checkVipStatus();
         }, 350);
     } else {
+        playSfx('click');
         errorMsg.innerText = "Kata sandi salah, silakan coba lagi!";
         keyInput.value = "";
         keyInput.focus();
@@ -351,13 +384,17 @@ function setupAppListeners() {
 }
 
 function usePreset(prefix) {
+    playSfx('click');
     const promptInput = document.getElementById('promptInput');
     promptInput.value = prefix;
     promptInput.focus();
+    promptInput.style.height = '24px';
+    promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
     document.getElementById('featureMenu').style.display = 'none';
 }
 
 function clearChat() {
+    playSfx('click');
     document.getElementById('chatHistory').innerHTML = `
         <div class="chat-bubble ai">
             <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
@@ -374,6 +411,226 @@ function getActionButtonsHTML() {
             <button class="copy-btn" onclick="copyToClipboard(this)"><i class="fa-regular fa-copy"></i> Salin</button>
         </div>
     `;
+}
+
+// EFEK SUARA SCI-FI CYBERPUNK SINTESIS (WEB AUDIO API - ZERO LAG)
+function getAudioContext() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function playSfx(type) {
+    if (!isSfxEnabled) return;
+    try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'click') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === 'send') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(320, now);
+            osc.frequency.exponentialRampToValueAtTime(950, now + 0.12);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'receive') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(580, now);
+            osc.frequency.exponentialRampToValueAtTime(1160, now + 0.16);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            osc.start(now);
+            osc.stop(now + 0.16);
+        } else if (type === 'login') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.28);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            osc.start(now);
+            osc.stop(now + 0.28);
+        } else if (type === 'voice') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(660, now + 0.09);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+            osc.start(now);
+            osc.stop(now + 0.09);
+        }
+    } catch (e) {}
+}
+
+function toggleSfx() {
+    isSfxEnabled = !isSfxEnabled;
+    localStorage.setItem('rey_sfx', isSfxEnabled ? 'true' : 'false');
+    const sfxBtn = document.getElementById('sfxToggleBtn');
+    const sfxIcon = document.getElementById('sfxIcon');
+    const menuSfxIcon = document.getElementById('menuSfxIcon');
+
+    if (isSfxEnabled) {
+        if (sfxBtn) sfxBtn.classList.remove('muted');
+        if (sfxIcon) sfxIcon.className = 'fa-solid fa-volume-high';
+        if (menuSfxIcon) menuSfxIcon.className = 'fa-solid fa-volume-high';
+        playSfx('click');
+    } else {
+        if (sfxBtn) sfxBtn.classList.add('muted');
+        if (sfxIcon) sfxIcon.className = 'fa-solid fa-volume-xmark';
+        if (menuSfxIcon) menuSfxIcon.className = 'fa-solid fa-volume-xmark';
+    }
+}
+
+// FITUR VOICE INPUT (KETIK PESAN PAKAI SUARA BAHASA INDONESIA)
+function toggleVoiceInput() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+        alert("Browser perangkatmu belum mendukung fitur rekaman suara langsung. Silakan gunakan Google Chrome di Android atau Safari di iOS.");
+        return;
+    }
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    const promptInput = document.getElementById('promptInput');
+
+    if (isVoiceRecording && speechRecognizer) {
+        speechRecognizer.stop();
+        isVoiceRecording = false;
+        if (voiceBtn) voiceBtn.classList.remove('recording');
+        playSfx('click');
+        return;
+    }
+
+    try {
+        speechRecognizer = new SpeechRec();
+        speechRecognizer.lang = 'id-ID';
+        speechRecognizer.continuous = false;
+        speechRecognizer.interimResults = true;
+
+        speechRecognizer.onstart = () => {
+            isVoiceRecording = true;
+            if (voiceBtn) voiceBtn.classList.add('recording');
+            playSfx('voice');
+            promptInput.placeholder = "Mendengarkan suaramu... silakan bicara!";
+        };
+
+        speechRecognizer.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            if (transcript) {
+                promptInput.value = transcript;
+                promptInput.style.height = '24px';
+                promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
+            }
+        };
+
+        speechRecognizer.onerror = (e) => {
+            isVoiceRecording = false;
+            if (voiceBtn) voiceBtn.classList.remove('recording');
+            promptInput.placeholder = "Ketik pesan atau tekan mic suara...";
+        };
+
+        speechRecognizer.onend = () => {
+            isVoiceRecording = false;
+            if (voiceBtn) voiceBtn.classList.remove('recording');
+            promptInput.placeholder = "Ketik pesan atau tekan mic suara...";
+            promptInput.focus();
+        };
+
+        speechRecognizer.start();
+    } catch (err) {
+        isVoiceRecording = false;
+        if (voiceBtn) voiceBtn.classList.remove('recording');
+    }
+}
+
+// FITUR INSTALASI APLIKASI DI HP (PWA)
+function triggerPwaInstall() {
+    playSfx('click');
+    const featureMenu = document.getElementById('featureMenu');
+    if (featureMenu) featureMenu.style.display = 'none';
+
+    if (pwaDeferredPrompt) {
+        pwaDeferredPrompt.prompt();
+        pwaDeferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                const installBtn = document.getElementById('installPwaBtn');
+                if (installBtn) installBtn.style.display = 'none';
+            }
+            pwaDeferredPrompt = null;
+        });
+    } else {
+        alert("Cara Pasang Aplikasi di HP:\n- Di HP Android (Chrome): Ketuk titik tiga (⋮) di pojok kanan atas, lalu pilih 'Tambahkan ke Layar Utama' / 'Install App'.\n- Di iPhone (Safari): Ketuk tombol 'Share' (kotak panah ke atas), lalu pilih 'Add to Home Screen'.");
+    }
+}
+
+// EKSPOR OBROLAN KE DOKUMEN / PDF
+function exportToPdf() {
+    playSfx('click');
+    const featureMenu = document.getElementById('featureMenu');
+    if (featureMenu) featureMenu.style.display = 'none';
+    setTimeout(() => {
+        window.print();
+    }, 250);
+}
+
+// SISTEM GAYA BICARA / PERSONA AI
+function onPersonaChanged() {
+    const sel = document.getElementById('personaSelect');
+    if (sel) {
+        currentPersona = sel.value;
+        const personaName = sel.options[sel.selectedIndex].text;
+        showAttachmentPreview(`🎭 Gaya Bicara: <strong>${personaName}</strong>`);
+        playSfx('click');
+        setTimeout(() => {
+            if (!attachedFileContent) {
+                document.getElementById('attachmentPreview').style.display = 'none';
+            }
+        }, 2200);
+    }
+}
+
+function setPersonaMode(mode) {
+    currentPersona = mode;
+    const sel = document.getElementById('personaSelect');
+    if (sel) sel.value = mode;
+    onPersonaChanged();
+    const featureMenu = document.getElementById('featureMenu');
+    if (featureMenu) featureMenu.style.display = 'none';
+}
+
+// RENDER RUMUS MATEMATIKA (KATEX)
+function renderMath(element) {
+    if (window.renderMathInElement && element) {
+        try {
+            renderMathInElement(element, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\[", right: "\\]", display: true },
+                    { left: "\\(", right: "\\)", display: false }
+                ],
+                throwOnError: false
+            });
+        } catch (e) {}
+    }
 }
 
 // PEMBERSIH KONTEN: HILANGKAN PROSES PIKIR INTERNAL & TAG FORMAT ANEH
@@ -402,8 +659,9 @@ function playTurboTypewriter(fullText, targetContainer, chatHistory, callback) {
         if (cursor >= total) {
             cursor = total;
             clearInterval(interval);
-            // Hanya parse Markdown SATU KALI di akhir agar format rapi tanpa ngelag!
             targetContainer.innerHTML = marked.parse(cleanedText) + getActionButtonsHTML();
+            renderMath(targetContainer);
+            playSfx('receive');
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
             if (callback) callback();
         } else {
@@ -427,14 +685,38 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         }
     }
 
-    // SISTEM PROMPT FORMAT RAPI & AKURASI TINGGI
+    // BANGUN SYSTEM PROMPT DINAMIS BERDASARKAN PERSONA GAYA BICARA
+    let personaInstruction = "";
+    if (currentPersona === 'gaul') {
+        personaInstruction = `GAYA BICARA GAUL & SANTAI:
+- Gunakan bahasa santai dan gaul khas anak muda Indonesia (lo-gue, asik, humoris, tidak kaku).
+- Tetap berikan informasi yang akurat, tepat, dan solutif.`;
+    } else if (currentPersona === 'formal') {
+        personaInstruction = `GAYA BICARA FORMAL & AKADEMIK:
+- Gunakan Bahasa Indonesia baku (EYD), sangat profesional, ilmiah, dan sopan.
+- Cocok untuk menyusun skripsi, karya ilmiah, makalah, dan laporan resmi berbobot tinggi.`;
+    } else if (currentPersona === 'tutor') {
+        personaInstruction = `GAYA BICARA GURU / TUTOR PR & MATEMATIKA:
+- Kamu adalah guru privat terbaik yang sabar dan detail dalam mengajar.
+- Untuk soal matematika, fisika, dan kimia: WAJIB tulis rumus lengkap dalam format KaTeX ($ ... $ atau $$ ... $$) dan jabarkan langkah pengerjaannya nomor per nomor hingga hasil akhir.`;
+    } else if (currentPersona === 'curhat') {
+        personaInstruction = `GAYA BICARA SAHABAT CURHAT:
+- Bersikaplah sangat hangat, empati, ramah, dan menjadi pendengar yang menenangkan.
+- Berikan motivasi, saran positif, dan dukungan emosional tanpa menghakimi.`;
+    } else {
+        personaInstruction = `GAYA BICARA STANDAR:
+- Berikan jawaban yang cerdas, teliti, terstruktur rapi, dan mudah dipahami pengguna.`;
+    }
+
     const systemPrompt = `Kamu adalah asisten AI resmi dari Rey Multi AI Hub (karya Rey472).
-PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & TIDAK ACAK-ACAKAN):
+${personaInstruction}
+
+PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & PRESISI):
 1. SUSUNAN RAPI & STRUKTUR INDAH: Tulis jawaban dengan paragraf rapi dan pemisah baris yang cukup. Gunakan penomoran (1, 2, 3) atau daftar poin (-) jika menjabarkan informasi panjang.
 2. LANGSUNG KE INTI JAWABAN: Jangan pernah menuliskan proses berpikir internal (seperti "Thinking Process:", "User:", "Response:", atau tag <think>). Berikan langsung jawaban yang bersih dan tuntas.
 3. AKURASI 100% TANPA KESALAHAN: Fakta, nama, tanggal, dan rumus matematika harus 100% presisi dan terverifikasi.
 4. SOAL & MATEMATIKA: Tulis rumus dan langkah penyelesaian secara runtut dan teratur hingga hasil akhir.
-5. BAHASA INDONESIA YANG BAIK: Gunakan Bahasa Indonesia yang luwes, santun, dan mudah dipahami.`;
+5. BAHASA INDONESIA YANG BAIK: Gunakan Bahasa Indonesia yang nyaman dibaca.`;
 
     targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-fade"></i> Membaca dan menyiapkan jawaban...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
@@ -508,6 +790,8 @@ PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & TIDAK ACAK-ACAKAN):
             const cleanFinal = cleanAIOutput(accumulatedText);
             if (cleanFinal !== "") {
                 targetContainer.innerHTML = marked.parse(cleanFinal) + getActionButtonsHTML();
+                renderMath(targetContainer);
+                playSfx('receive');
                 if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
                 return;
             }
@@ -548,6 +832,8 @@ async function sendPrompt() {
     if (!userPrompt && !attachedFileContent) return;
     if (featureMenu) featureMenu.style.display = 'none';
 
+    playSfx('send');
+
     let displayUserMessage = escapeHtml(userPrompt);
     if (attachedFileContent && attachedFileContent.type === 'image') {
         displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 180px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Artikan teks');
@@ -576,6 +862,7 @@ async function sendPrompt() {
         const imgP = userPrompt.replace(/buat gambar:/i, '').trim();
         const finalOutput = `Hasil Pembuatan Gambar: **"${imgP}"**\n\n![Gambar AI](https://image.pollinations.ai/prompt/${encodeURIComponent(imgP)}?width=1024&height=1024&nologo=true)`;
         targetContainer.innerHTML = marked.parse(finalOutput);
+        playSfx('receive');
         isImageGenMode = false;
     } else {
         await streamAIResponse(userPrompt, model, targetContainer);
