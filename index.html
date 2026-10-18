@@ -103,6 +103,7 @@
                         <option value="searchgpt">🌐 Web Search</option>
                     </optgroup>
                 </select>
+                <button class="icon-btn" id="toolboxBtn" onclick="openToolbox()" title="Kotak Alat AI (Tools Hub)"><i class="fa-solid fa-toolbox"></i></button>
                 <button class="icon-btn" id="sfxToggleBtn" onclick="toggleSfx()" title="Efek Suara Sci-Fi"><i id="sfxIcon" class="fa-solid fa-volume-high"></i></button>
                 <button class="icon-btn" id="clearBtn" title="Hapus Riwayat Obrolan"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -160,6 +161,10 @@
                     <i class="fa-solid fa-calculator"></i>
                     <span>Tutor PR</span>
                 </div>
+                <div class="feature-icon-item" onclick="openToolbox()">
+                    <i class="fa-solid fa-toolbox" style="color: #38bdf8;"></i>
+                    <span>Kotak Alat</span>
+                </div>
                 <div class="feature-icon-item" onclick="toggleVoiceInput()">
                     <i class="fa-solid fa-microphone-lines"></i>
                     <span>Voice Mic</span>
@@ -167,6 +172,13 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="feature-list-item" onclick="openToolbox()">
+                    <i class="fa-solid fa-toolbox" style="color: #38bdf8;"></i>
+                    <div class="feature-list-text">
+                        <h4>Kotak Alat AI (6-in-1 Tools Hub)</h4>
+                        <p>Parafrase anti-plagiasi, PPT, surat resmi, kuis, prompt & koding</p>
+                    </div>
+                </div>
                 <div class="feature-list-item" onclick="setModeImageGen()">
                     <i class="fa-solid fa-palette"></i>
                     <div class="feature-list-text">
@@ -223,6 +235,157 @@
                 <div id="genTokenResult" class="gen-result" style="display:none; margin-top:8px; font-family:monospace; color:#f59e0b;"></div>
             </div>
             <p style="margin-top: 14px; cursor: pointer; color: var(--text-muted); font-size: 11px;" id="closeModalText">Batal / Kembali</p>
+        </div>
+    </div>
+
+    <!-- MODAL KOTAK ALAT AI (AI TOOLBOX 6-IN-1) -->
+    <div id="toolboxModal" class="modal-overlay">
+        <div class="toolbox-box">
+            <div class="toolbox-header">
+                <div class="toolbox-title">
+                    <i class="fa-solid fa-toolbox" style="color: var(--accent);"></i>
+                    <span>Kotak Alat AI Pintar</span>
+                </div>
+                <button class="toolbox-close-btn" onclick="closeToolbox()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Tab Navigasi Alat -->
+            <div class="toolbox-tabs">
+                <button class="toolbox-tab active" onclick="switchToolTab('paraphrase')"><i class="fa-solid fa-file-pen"></i> Parafrase</button>
+                <button class="toolbox-tab" onclick="switchToolTab('ppt')"><i class="fa-solid fa-chart-pie"></i> Slide PPT</button>
+                <button class="toolbox-tab" onclick="switchToolTab('letter')"><i class="fa-solid fa-envelope-open-text"></i> Surat Resmi</button>
+                <button class="toolbox-tab" onclick="switchToolTab('quiz')"><i class="fa-solid fa-circle-question"></i> Pembuat Kuis</button>
+                <button class="toolbox-tab" onclick="switchToolTab('prompt')"><i class="fa-solid fa-wand-magic-sparkles"></i> Prompt Gambar</button>
+                <button class="toolbox-tab" onclick="switchToolTab('code')"><i class="fa-solid fa-code"></i> Perbaiki Kode</button>
+            </div>
+
+            <div class="toolbox-body">
+                <!-- 1. PARAPHRASE TOOL -->
+                <div id="tool-paraphrase" class="tool-content active">
+                    <div class="tool-desc">Tulis ulang kalimat atau paragraf agar bebas plagiasi, lolos Turnitin, dan lebih mengalir.</div>
+                    <div class="tool-row">
+                        <label>Gaya Bahasa:</label>
+                        <select id="paraStyle" class="tool-select">
+                            <option value="akademik">🎓 Akademik Formal (Skripsi/Makalah)</option>
+                            <option value="santai">😎 Santai & Mengalir Alami</option>
+                            <option value="ringkas">⚡ Ringkas & Padat Intinya</option>
+                            <option value="profesional">💼 Profesional Bisnis</option>
+                        </select>
+                    </div>
+                    <textarea id="paraInput" class="tool-textarea" placeholder="Tempel atau ketik teks yang ingin diparafrase di sini..."></textarea>
+                    <button class="tool-action-btn" id="btnRunPara" onclick="runParaphraser()"><i class="fa-solid fa-arrows-rotate"></i> Mulai Parafrase Teks</button>
+                    <div id="paraResult" class="tool-output" style="display:none;"></div>
+                </div>
+
+                <!-- 2. PPT OUTLINE TOOL -->
+                <div id="tool-ppt" class="tool-content">
+                    <div class="tool-desc">Susun outline dan materi presentasi slide demi slide lengkap dengan poin & catatan pembicara.</div>
+                    <div class="tool-row">
+                        <label>Jumlah Slide:</label>
+                        <select id="pptSlideCount" class="tool-select">
+                            <option value="5">5 Slide (Cepat & Padat)</option>
+                            <option value="8" selected>8 Slide (Standar Presentasi)</option>
+                            <option value="10">10 Slide (Lengkap & Mendalam)</option>
+                        </select>
+                    </div>
+                    <div class="tool-row">
+                        <label>Audiens:</label>
+                        <select id="pptAudience" class="tool-select">
+                            <option value="Pelajar / Mahasiswa">Pelajar / Mahasiswa</option>
+                            <option value="Profesional / Bisnis">Profesional / Bisnis</option>
+                            <option value="Umum / Santai">Masyarakat Umum</option>
+                        </select>
+                    </div>
+                    <input type="text" id="pptTopic" class="tool-input" placeholder="Topik Presentasi (Contoh: Dampak AI bagi Pendidikan Masa Depan)" />
+                    <button class="tool-action-btn" id="btnRunPpt" onclick="runPptGenerator()"><i class="fa-solid fa-file-powerpoint"></i> Buat Outline Slide Presentasi</button>
+                    <div id="pptResult" class="tool-output" style="display:none;"></div>
+                </div>
+
+                <!-- 3. FORMAL LETTER TOOL -->
+                <div id="tool-letter" class="tool-content">
+                    <div class="tool-desc">Buat surat izin sakit, lamaran kerja, atau pesan resmi dalam hitungan detik.</div>
+                    <div class="tool-row">
+                        <label>Jenis Surat:</label>
+                        <select id="letterType" class="tool-select">
+                            <option value="izin_sakit">🏥 Surat Izin Sakit / Tidak Masuk</option>
+                            <option value="lamaran">💼 Surat Lamaran Kerja (Cover Letter)</option>
+                            <option value="izin_cuti">🏖️ Permohonan Cuti / Keperluan Mendesak</option>
+                            <option value="pesan_dosen">🎓 Pesan Sopan ke Dosen / Guru (WhatsApp/Email)</option>
+                            <option value="resign">👋 Surat Pengunduran Diri (Resign)</option>
+                        </select>
+                    </div>
+                    <input type="text" id="letterSender" class="tool-input" placeholder="Nama Anda (Contoh: Ahmad Reyhan)" />
+                    <input type="text" id="letterRecipient" class="tool-input" placeholder="Penerima / Instansi (Contoh: HRD PT Maju Jaya / Wali Kelas 12)" />
+                    <textarea id="letterDetail" class="tool-textarea" style="height:70px;" placeholder="Keterangan singkat / alasan (Contoh: Mengalami demam dan flu sejak semalam, izin istirahat 2 hari)"></textarea>
+                    <button class="tool-action-btn" id="btnRunLetter" onclick="runLetterGenerator()"><i class="fa-solid fa-paper-plane"></i> Buat Surat Resmi Sekarang</button>
+                    <div id="letterResult" class="tool-output" style="display:none;"></div>
+                </div>
+
+                <!-- 4. QUIZ GENERATOR TOOL -->
+                <div id="tool-quiz" class="tool-content">
+                    <div class="tool-desc">Ubah materi pelajaran atau catatan menjadi soal pilihan ganda lengkap dengan kunci jawaban.</div>
+                    <div class="tool-row">
+                        <label>Jumlah Soal:</label>
+                        <select id="quizCount" class="tool-select">
+                            <option value="3">3 Soal</option>
+                            <option value="5" selected>5 Soal</option>
+                            <option value="10">10 Soal</option>
+                        </select>
+                    </div>
+                    <div class="tool-row">
+                        <label>Tingkat Kesulitan:</label>
+                        <select id="quizDifficulty" class="tool-select">
+                            <option value="Mudah">Mudah (Dasar)</option>
+                            <option value="Sedang" selected>Sedang (Menengah)</option>
+                            <option value="Sulit / Analisis">Sulit / Soal HOTS Analisis</option>
+                        </select>
+                    </div>
+                    <textarea id="quizInput" class="tool-textarea" placeholder="Tempel materi pelajaran, ringkasan, atau sebutkan topik materi yang ingin dibuatkan kuis..."></textarea>
+                    <button class="tool-action-btn" id="btnRunQuiz" onclick="runQuizGenerator()"><i class="fa-solid fa-graduation-cap"></i> Buat Soal Kuis Sekarang</button>
+                    <div id="quizResult" class="tool-output" style="display:none;"></div>
+                </div>
+
+                <!-- 5. PROMPT CRAFTER TOOL -->
+                <div id="tool-prompt" class="tool-content">
+                    <div class="tool-desc">Racik ide gambarmu menjadi prompt gambar pro berkualitas tinggi (8K, photorealistic).</div>
+                    <div class="tool-row">
+                        <label>Gaya Gambar:</label>
+                        <select id="promptStyle" class="tool-select">
+                            <option value="photorealistic">📸 Photorealistic Realistis 8K</option>
+                            <option value="cyberpunk">🌃 Cyberpunk Sci-Fi Neon</option>
+                            <option value="anime">✨ Anime Estetik Makoto Shinkai</option>
+                            <option value="3d_pixar">🧸 3D Render Animasi Pixar</option>
+                            <option value="fantasy">🔮 Fantasi Epik & Magis</option>
+                            <option value="oil_painting">🎨 Lukisan Cat Minyak Klasik</option>
+                        </select>
+                    </div>
+                    <input type="text" id="promptIdea" class="tool-input" placeholder="Ide gambar (Contoh: Harimau bercahaya neon di tengah hutan malam hari)" />
+                    <button class="tool-action-btn" id="btnRunPrompt" onclick="runPromptCrafter()"><i class="fa-solid fa-wand-magic-sparkles"></i> Racik Prompt Pro</button>
+                    <div id="promptResult" class="tool-output" style="display:none;"></div>
+                </div>
+
+                <!-- 6. CODE FIXER TOOL -->
+                <div id="tool-code" class="tool-content">
+                    <div class="tool-desc">Deteksi error koding, perbaiki sintaks yang salah, dan optimasi performa logika program.</div>
+                    <div class="tool-row">
+                        <label>Bahasa Pemrograman:</label>
+                        <select id="codeLang" class="tool-select">
+                            <option value="auto">⚡ Deteksi Otomatis</option>
+                            <option value="javascript">JavaScript / Node.js</option>
+                            <option value="python">Python</option>
+                            <option value="html_css">HTML & CSS</option>
+                            <option value="php">PHP</option>
+                            <option value="cpp">C / C++</option>
+                            <option value="java">Java</option>
+                            <option value="sql">SQL / Database</option>
+                        </select>
+                    </div>
+                    <textarea id="codeInput" class="tool-textarea code-font" placeholder="Tempel kode yang error atau ingin dibenahi di sini..."></textarea>
+                    <input type="text" id="codeErrorMsg" class="tool-input" placeholder="Pesan error di konsol terminal (opsional)" />
+                    <button class="tool-action-btn" id="btnRunCode" onclick="runCodeFixer()"><i class="fa-solid fa-bug-slash"></i> Analisis & Perbaiki Kode</button>
+                    <div id="codeResult" class="tool-output" style="display:none;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
