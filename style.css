@@ -12,8 +12,8 @@
 }
 
 * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-html { height: 100%; height: 100vh; height: 100dvh; }
-body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; overflow: hidden; position: relative; }
+html { height: 100%; height: 100vh; height: 100dvh; height: calc(var(--vh, 1vh) * 100); }
+body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; height: calc(var(--vh, 1vh) * 100); max-height: calc(var(--vh, 1vh) * 100); overflow: hidden; position: relative; }
 
 /* Wallpaper Futuristik & Cyber Grid */
 .wallpaper-bg {
@@ -106,7 +106,7 @@ body { background: var(--bg-color); color: var(--text-main); margin: 0; padding:
 .lock-btn:hover::after { transform: rotate(30deg) translate(50%, 50%); }
 
 /* Main Interface */
-#mainSection { display: none; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; width: 100%; max-width: 800px; margin: auto; background: transparent; position: relative; z-index: 10; }
+#mainSection { display: none; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; height: calc(var(--vh, 1vh) * 100); max-height: calc(var(--vh, 1vh) * 100); width: 100%; max-width: 800px; margin: auto; background: transparent; position: relative; z-index: 10; }
 
 /* App Header */
 .app-header { background: rgba(19, 27, 46, 0.7); backdrop-filter: blur(14px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
@@ -223,11 +223,11 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
 @media (max-width: 768px) {
     #mainSection {
         height: 100%;
-        height: 100vh;
-        height: 100dvh;
+        height: calc(var(--vh, 1vh) * 100);
+        max-height: calc(var(--vh, 1vh) * 100);
     }
     .input-bar-container {
-        padding: 8px 12px calc(34px + env(safe-area-inset-bottom, 0px)) 12px !important;
+        padding: 10px 12px calc(52px + env(safe-area-inset-bottom, 0px)) 12px !important;
         background: rgba(11, 15, 23, 0.98) !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
@@ -236,12 +236,13 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
         display: none !important;
     }
     .feature-menu {
-        bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(115px + env(safe-area-inset-bottom, 0px)) !important;
     }
     .input-bar {
-        padding: 6px 8px 6px 12px !important;
-        background: rgba(19, 27, 46, 0.95) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+        padding: 7px 10px 7px 14px !important;
+        background: rgba(19, 27, 46, 0.98) !important;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.8) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
     }
     .input-bar textarea {
         font-size: 16px !important;
