@@ -20,6 +20,9 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     
+    <!-- PDF.js untuk Chat & Ekstraksi Teks File PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -58,14 +61,59 @@
         </div>
     </div>
 
+    <!-- SIDEBAR DRAWER RIWAYAT OBROLAN (CHATGPT STYLE) -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+    <aside id="chatSidebar" class="chat-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <img src="1791994468675.jpg" class="sidebar-logo" alt="Logo" />
+                <span>Rey AI Hub</span>
+            </div>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <button class="new-chat-btn" onclick="createNewChatSession()">
+            <i class="fa-solid fa-plus"></i>
+            <span>Obrolan Baru</span>
+        </button>
+
+        <div class="sidebar-section-title">
+            <span>RIWAYAT OBROLAN</span>
+            <button class="clear-all-chats-btn" onclick="clearAllSessions()" title="Hapus Semua Riwayat"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+
+        <div id="sessionList" class="session-list">
+            <!-- Diisi secara dinamis oleh JavaScript -->
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-item" onclick="openCustomSettings()">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Profil & Aturan Kustom</span>
+            </div>
+            <div class="sidebar-footer-item" onclick="openToolbox()">
+                <i class="fa-solid fa-toolbox"></i>
+                <span>Kotak Alat AI (6-in-1)</span>
+            </div>
+            <div class="sidebar-footer-item" onclick="triggerPwaInstall()">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                <span>Pasang Aplikasi di HP</span>
+            </div>
+            <div class="sidebar-credits">© Rey472 • Multi AI Pro Engine</div>
+        </div>
+    </aside>
+
     <!-- TAMPILAN UTAMA APLIKASI -->
     <div id="mainSection">
         <div class="app-header">
-            <div class="brand-info">
-                <img src="1791994468675.jpg" id="brandLogo" class="header-brand-logo" alt="Logo" />
-                <div class="brand-text">
-                    <h1>Rey Multi AI Hub</h1>
-                    <p id="userStatusTag">© Rey472 • Kecepatan Turbo 🔥</p>
+            <div class="header-left-group">
+                <button class="icon-btn sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Riwayat Obrolan"><i class="fa-solid fa-bars"></i></button>
+                <div class="brand-info">
+                    <img src="1791994468675.jpg" id="brandLogo" class="header-brand-logo" alt="Logo" />
+                    <div class="brand-text">
+                        <h1 id="headerChatTitle">Rey Multi AI Hub</h1>
+                        <p id="userStatusTag">© Rey472 • Kecepatan Turbo 🔥</p>
+                    </div>
                 </div>
             </div>
             <div class="header-actions">
@@ -104,8 +152,10 @@
                     </optgroup>
                 </select>
                 <button class="icon-btn" id="toolboxBtn" onclick="openToolbox()" title="Kotak Alat AI (Tools Hub)"><i class="fa-solid fa-toolbox"></i></button>
+                <button class="icon-btn" id="customSettingsBtn" onclick="openCustomSettings()" title="Kustomisasi & Profil AI"><i class="fa-solid fa-sliders"></i></button>
                 <button class="icon-btn" id="sfxToggleBtn" onclick="toggleSfx()" title="Efek Suara Sci-Fi"><i id="sfxIcon" class="fa-solid fa-volume-high"></i></button>
-                <button class="icon-btn" id="clearBtn" title="Hapus Riwayat Obrolan"><i class="fa-solid fa-trash-can"></i></button>
+                <button class="icon-btn" id="newChatHeaderBtn" onclick="createNewChatSession()" title="Obrolan Baru (+)"><i class="fa-solid fa-plus"></i></button>
+                <button class="icon-btn" id="clearBtn" title="Hapus Obrolan Ini"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </div>
 
@@ -385,6 +435,57 @@
                     <button class="tool-action-btn" id="btnRunCode" onclick="runCodeFixer()"><i class="fa-solid fa-bug-slash"></i> Analisis & Perbaiki Kode</button>
                     <div id="codeResult" class="tool-output" style="display:none;"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LIVE CODE PREVIEW (ARTIFACTS RUNNER) -->
+    <div id="codePreviewModal" class="modal-overlay">
+        <div class="code-preview-box">
+            <div class="code-preview-header">
+                <div class="code-preview-title">
+                    <i class="fa-solid fa-play" style="color: #10b981;"></i>
+                    <span>Live Code Preview / Pratinjau Interaktif</span>
+                </div>
+                <div class="code-preview-actions">
+                    <button class="preview-mini-btn" onclick="refreshCodePreview()" title="Muat Ulang"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                    <button class="preview-mini-btn" onclick="openPreviewNewTab()" title="Buka Tab Baru"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tab Baru</button>
+                    <button class="toolbox-close-btn" onclick="closeCodePreview()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="code-preview-body">
+                <iframe id="previewIframe" sandbox="allow-scripts allow-modals allow-forms"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PROFIL & CUSTOM INSTRUCTIONS (PENGATURAN KUSTOM AI) -->
+    <div id="customSettingsModal" class="modal-overlay">
+        <div class="toolbox-box" style="max-width: 480px;">
+            <div class="toolbox-header">
+                <div class="toolbox-title">
+                    <i class="fa-solid fa-sliders" style="color: var(--accent);"></i>
+                    <span>Kustomisasi & Profil Pengguna</span>
+                </div>
+                <button class="toolbox-close-btn" onclick="closeCustomSettings()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="toolbox-body">
+                <div class="tool-desc">
+                    Sesuaikan preferensi agar AI menjawab sesuai profesi, gaya, dan kebutuhan pribadimu secara otomatis!
+                </div>
+                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <label>Nama Panggilan Anda:</label>
+                    <input type="text" id="customUserName" class="tool-input" placeholder="Contoh: Reyhan / Kak Rey" />
+                </div>
+                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <label>Profesi / Peran Anda:</label>
+                    <input type="text" id="customUserRole" class="tool-input" placeholder="Contoh: Mahasiswa Teknik Informatika / Siswa SMA / Konten Kreator" />
+                </div>
+                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <label>Aturan Khusus Cara AI Menjawab:</label>
+                    <textarea id="customUserRules" class="tool-textarea" style="height: 85px;" placeholder="Contoh: Selalu jelaskan poin per poin, sertakan analogi mudah, dan jika tentang koding gunakan bahasa JavaScript atau Python."></textarea>
+                </div>
+                <button class="tool-action-btn" onclick="saveCustomSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Preferensi Profil</button>
             </div>
         </div>
     </div>
