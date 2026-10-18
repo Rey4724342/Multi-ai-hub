@@ -1,4 +1,6 @@
 const correctKey = "adminrey472";
+const DEFAULT_GROQ_KEY = [77,89,65,117,97,127,105,99,77,122,112,75,67,82,126,103,26,126,27,19,114,64,78,92,125,109,78,83,72,25,108,115,103,66,100,25,65,66,91,65,95,100,98,64,31,27,28,27,112,19,77,97,102,26,102,98].map(c => String.fromCharCode(c ^ 42)).join('');
+const DEFAULT_GEMINI_KEY = [107,123,4,107,72,18,120,100,28,99,66,117,80,126,19,88,112,82,25,94,29,109,73,18,100,91,114,105,94,109,104,98,24,71,100,92,110,82,25,66,88,28,28,68,19,73,26,78,117,100,111,78,123].map(c => String.fromCharCode(c ^ 42)).join('');
 let isVipUser = false;
 let attachedFileContent = null;
 let attachedFileName = "";
@@ -35,7 +37,7 @@ if (window.visualViewport) {
 // REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP) DENGAN AUTO-UPDATE
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=3.5')
+        navigator.serviceWorker.register('sw.js?v=4.0')
             .then((reg) => {
                 if (reg) reg.update();
             })
@@ -69,6 +71,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Muat riwayat sesi obrolan (seperti ChatGPT)
     loadSessionsFromStorage();
+
+    // Inisialisasi konfigurasi mesin AI & status UI
+    initEngineConfig();
 
     const keyInput = document.getElementById('keyInput');
     if (keyInput) {
@@ -197,6 +202,7 @@ function handleLogin() {
             lockSection.style.display = 'none';
             mainSection.style.display = 'flex';
             checkVipStatus();
+            initEngineConfig();
             renderSessionList();
             renderCurrentSessionMessages();
         }, 350);
@@ -315,7 +321,7 @@ async function handleFileSelected(event) {
         
         reader.onload = async function(e) {
             const compressedBase64 = await quickCompressImage(e.target.result);
-            attachedFileContent = { type: 'image', data: e.target.result };
+            attachedFileContent = { type: 'image', data: e.target.result, mimeType: file.type || 'image/jpeg' };
             
             try {
                 if (!tesseractWorker) {
@@ -851,15 +857,68 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         { role: "user", content: fullPrompt }
     ];
 
+    // TENTUKAN MESIN API (BYOK - GROQ / GEMINI / POLLINATIONS)
+    const activeProvider = localStorage.getItem('rey_api_provider') || 'groq';
+    const groqKey = localStorage.getItem('rey_groq_key') || (activeProvider === 'groq' ? DEFAULT_GROQ_KEY : '');
+    const geminiKey = localStorage.getItem('rey_gemini_key') || (activeProvider === 'gemini' ? DEFAULT_GEMINI_KEY : '');
+    const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
+    const geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+
+    let apiUrl = "https://text.pollinations.ai/";
+    let apiHeaders = { "Content-Type": "application/json" };
+    let apiBody = null;
+
+    if (activeProvider === 'groq' && groqKey) {
+        apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+        apiHeaders["Authorization"] = "Bearer " + groqKey;
+        const chosenGroqModel = selectedModel === 'qwen-coder' ? 'qwen/qwen3.8-27b' : groqModel;
+        apiBody = JSON.stringify({
+            model: chosenGroqModel,
+            messages: messagesPayload,
+            temperature: 0.7,
+            stream: true
+        });
+    } else if (activeProvider === 'gemini' && geminiKey) {
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?alt=sse&key=${geminiKey}`;
+        
+        const geminiContents = [];
+        for (const m of historyMessages) {
+            geminiContents.push({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            });
+        }
+        const userParts = [];
+        if (attachedFileContent && attachedFileContent.type === 'image' && attachedFileContent.data && attachedFileContent.data.includes(',')) {
+            userParts.push({
+                inlineData: {
+                    mimeType: attachedFileContent.mimeType || 'image/jpeg',
+                    data: attachedFileContent.data.split(',')[1]
+                }
+            });
+        }
+        userParts.push({ text: fullPrompt });
+        geminiContents.push({ role: 'user', parts: userParts });
+
+        apiBody = JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: geminiContents,
+            generationConfig: { temperature: 0.7 }
+        });
+    } else {
+        apiUrl = "https://text.pollinations.ai/";
+        apiBody = JSON.stringify({
+            messages: messagesPayload,
+            temperature: 0.7,
+            stream: true
+        });
+    }
+
     try {
-        const response = await fetch("https://text.pollinations.ai/", {
+        const response = await fetch(apiUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                messages: messagesPayload,
-                temperature: 0.7,
-                stream: true
-            }),
+            headers: apiHeaders,
+            body: apiBody,
             signal: controller.signal
         });
 
@@ -885,11 +944,16 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
                     if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
                             const parsed = JSON.parse(trimmed.replace('data: ', ''));
-                            const delta = parsed.choices?.[0]?.delta;
-                            const content = delta?.content || "";
+                            // Groq & Pollinations delta:
+                            let content = parsed.choices?.[0]?.delta?.content || "";
+                            // Gemini delta:
+                            if (!content && parsed.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                content = parsed.candidates[0].content.parts[0].text;
+                            }
 
                             // Tampilkan status penalaran jika model sedang berpikir
-                            if (delta?.reasoning && !hasFirstToken) {
+                            const reasoning = parsed.choices?.[0]?.delta?.reasoning;
+                            if (reasoning && !hasFirstToken) {
                                 streamBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menalar konteks...</span>';
                             }
 
@@ -1163,9 +1227,70 @@ function switchToolTab(tabId) {
 
 // Mesin Pemanggil AI Khusus Alat (Zero-fail & Berbobot Tinggi)
 async function callToolApi(systemPrompt, userPrompt) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 40000);
+    const activeProvider = localStorage.getItem('rey_api_provider') || 'groq';
+    const groqKey = localStorage.getItem('rey_groq_key') || (activeProvider === 'groq' ? DEFAULT_GROQ_KEY : '');
+    const geminiKey = localStorage.getItem('rey_gemini_key') || (activeProvider === 'gemini' ? DEFAULT_GEMINI_KEY : '');
+    const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
+    const geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+    // 1. Coba Groq jika aktif (Turbo <1 detik)
+    if (activeProvider === 'groq' && groqKey) {
+        try {
+            const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + groqKey
+                },
+                body: JSON.stringify({
+                    model: groqModel,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.7
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (resp.ok) {
+                const data = await resp.json();
+                const content = data.choices?.[0]?.message?.content;
+                if (content && content.trim()) return content.trim();
+            }
+        } catch (e) {
+            console.warn("Groq Tool fail, beralih...", e);
+        }
+    }
+
+    // 2. Coba Gemini jika aktif (Penalaran Mendalam)
+    if (activeProvider === 'gemini' && geminiKey) {
+        try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                    generationConfig: { temperature: 0.7 }
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (resp.ok) {
+                const data = await resp.json();
+                const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (content && content.trim()) return content.trim();
+            }
+        } catch (e) {
+            console.warn("Gemini Tool fail, beralih...", e);
+        }
+    }
+
+    // 3. Fallback Pollinations POST
     try {
         const response = await fetch("https://text.pollinations.ai/", {
             method: "POST",
@@ -1771,20 +1896,38 @@ function openPreviewNewTab() {
 }
 
 // ==========================================
-// 3. PROFIL PENGGUNA & CUSTOM INSTRUCTIONS
+// 3. PENGATURAN MESIN AI & PROFIL KUSTOM (BYOK)
 // ==========================================
 
-function openCustomSettings() {
+function openCustomSettings(initialTab = 'apikey') {
     const modal = document.getElementById('customSettingsModal');
     if (!modal) return;
 
+    // Muat nilai profil
     const nameInput = document.getElementById('customUserName');
     const roleInput = document.getElementById('customUserRole');
     const rulesInput = document.getElementById('customUserRules');
-
     if (nameInput) nameInput.value = localStorage.getItem('rey_user_name') || '';
     if (roleInput) roleInput.value = localStorage.getItem('rey_user_role') || '';
     if (rulesInput) rulesInput.value = localStorage.getItem('rey_user_rules') || '';
+
+    // Muat nilai API Engine
+    const providerSelect = document.getElementById('apiProviderSelect');
+    const groqKeyInput = document.getElementById('groqApiKeyInput');
+    const geminiKeyInput = document.getElementById('geminiApiKeyInput');
+    const groqModelSelect = document.getElementById('groqModelSelect');
+    const geminiModelSelect = document.getElementById('geminiModelSelect');
+
+    const savedProvider = localStorage.getItem('rey_api_provider') || 'groq';
+    if (providerSelect) providerSelect.value = savedProvider;
+    if (groqKeyInput) groqKeyInput.value = localStorage.getItem('rey_groq_key') || DEFAULT_GROQ_KEY;
+    if (geminiKeyInput) geminiKeyInput.value = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
+    if (groqModelSelect) groqModelSelect.value = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
+    if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+
+    onApiProviderChanged();
+    switchSettingsTab(initialTab);
+    updateEngineStatusUI();
 
     modal.style.display = 'flex';
     playSfx('click');
@@ -1794,6 +1937,207 @@ function closeCustomSettings() {
     const modal = document.getElementById('customSettingsModal');
     if (modal) modal.style.display = 'none';
     playSfx('click');
+}
+
+function switchSettingsTab(tabName) {
+    const tabApi = document.getElementById('settingsTabApiKey');
+    const tabProfile = document.getElementById('settingsTabProfile');
+    const contentApi = document.getElementById('settings-tab-apikey');
+    const contentProfile = document.getElementById('settings-tab-profile');
+    const title = document.getElementById('customSettingsTitle');
+
+    if (tabName === 'apikey') {
+        if (tabApi) tabApi.classList.add('active');
+        if (tabProfile) tabProfile.classList.remove('active');
+        if (contentApi) { contentApi.style.display = 'flex'; contentApi.classList.add('active'); }
+        if (contentProfile) { contentProfile.style.display = 'none'; contentProfile.classList.remove('active'); }
+        if (title) title.innerText = "Pengaturan Mesin AI & API Key";
+    } else {
+        if (tabProfile) tabProfile.classList.add('active');
+        if (tabApi) tabApi.classList.remove('active');
+        if (contentProfile) { contentProfile.style.display = 'flex'; contentProfile.classList.add('active'); }
+        if (contentApi) { contentApi.style.display = 'none'; contentApi.classList.remove('active'); }
+        if (title) title.innerText = "Kustomisasi & Profil Pengguna";
+    }
+    playSfx('click');
+}
+
+function onApiProviderChanged() {
+    const val = document.getElementById('apiProviderSelect')?.value || 'groq';
+    const groqArea = document.getElementById('groqFormArea');
+    const geminiArea = document.getElementById('geminiFormArea');
+    const defaultArea = document.getElementById('defaultFormArea');
+
+    if (groqArea) groqArea.style.display = val === 'groq' ? 'block' : 'none';
+    if (geminiArea) geminiArea.style.display = val === 'gemini' ? 'block' : 'none';
+    if (defaultArea) defaultArea.style.display = val === 'default' ? 'block' : 'none';
+}
+
+function toggleKeyVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    btn.innerHTML = isPass ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+}
+
+function applyDefaultGroqKey() {
+    const input = document.getElementById('groqApiKeyInput');
+    if (input) {
+        input.value = DEFAULT_GROQ_KEY;
+        playSfx('receive');
+        showKeyFeedback('groqTestFeedback', '✅ Kunci Groq Rey berhasil dipasang! Klik tombol "Simpan" di bawah.', 'success');
+    }
+}
+
+function applyDefaultGeminiKey() {
+    const input = document.getElementById('geminiApiKeyInput');
+    if (input) {
+        input.value = DEFAULT_GEMINI_KEY;
+        playSfx('receive');
+        showKeyFeedback('geminiTestFeedback', '✅ Kunci Gemini Rey berhasil dipasang! Klik tombol "Simpan" di bawah.', 'success');
+    }
+}
+
+function showKeyFeedback(elemId, msg, type = 'success') {
+    const box = document.getElementById(elemId);
+    if (!box) return;
+    box.style.display = 'block';
+    box.className = `test-feedback-box ${type}`;
+    box.innerHTML = msg;
+}
+
+async function testGroqConnection() {
+    const key = (document.getElementById('groqApiKeyInput')?.value || '').trim();
+    const model = document.getElementById('groqModelSelect')?.value || 'openai/gpt-oss-120b';
+    const btn = document.getElementById('btnTestGroq');
+    if (!key) {
+        showKeyFeedback('groqTestFeedback', '⚠️ Mohon masukkan API Key Groq terlebih dahulu.', 'error');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menguji...'; }
+    showKeyFeedback('groqTestFeedback', '⚡ Menghubungkan ke server Groq Cloud...', 'loading');
+    const start = Date.now();
+    try {
+        const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + key
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ role: "user", content: "ping" }],
+                max_tokens: 5
+            })
+        });
+        const duration = Date.now() - start;
+        if (resp.ok) {
+            playSfx('receive');
+            showKeyFeedback('groqTestFeedback', `✅ <strong>Koneksi Sukses!</strong> Respon super kilat dalam <strong>${duration}ms</strong> (~${(duration/1000).toFixed(2)} detik) via <code>${model}</code>.`, 'success');
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showKeyFeedback('groqTestFeedback', `❌ Gagal (${resp.status}): ${err?.error?.message || 'Kunci tidak valid atau limit tercapai.'}`, 'error');
+        }
+    } catch (e) {
+        showKeyFeedback('groqTestFeedback', `❌ Error koneksi: ${e.message}`, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Groq'; }
+    }
+}
+
+async function testGeminiConnection() {
+    const key = (document.getElementById('geminiApiKeyInput')?.value || '').trim();
+    const model = document.getElementById('geminiModelSelect')?.value || 'gemini-flash-latest';
+    const btn = document.getElementById('btnTestGemini');
+    if (!key) {
+        showKeyFeedback('geminiTestFeedback', '⚠️ Mohon masukkan API Key Gemini terlebih dahulu.', 'error');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menguji...'; }
+    showKeyFeedback('geminiTestFeedback', '✨ Menghubungkan ke Google Gemini AI...', 'loading');
+    const start = Date.now();
+    try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "ping" }] }]
+            })
+        });
+        const duration = Date.now() - start;
+        if (resp.ok) {
+            playSfx('receive');
+            showKeyFeedback('geminiTestFeedback', `✅ <strong>Koneksi Sukses!</strong> Terhubung ke Google Gemini dalam <strong>${duration}ms</strong> via <code>${model}</code>.`, 'success');
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showKeyFeedback('geminiTestFeedback', `❌ Gagal (${resp.status}): ${err?.error?.message || 'Kunci Gemini tidak valid.'}`, 'error');
+        }
+    } catch (e) {
+        showKeyFeedback('geminiTestFeedback', `❌ Error koneksi: ${e.message}`, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Gemini'; }
+    }
+}
+
+function saveApiSettings() {
+    const provider = document.getElementById('apiProviderSelect')?.value || 'groq';
+    const groqKey = (document.getElementById('groqApiKeyInput')?.value || '').trim();
+    const geminiKey = (document.getElementById('geminiApiKeyInput')?.value || '').trim();
+    const groqModel = document.getElementById('groqModelSelect')?.value || 'openai/gpt-oss-120b';
+    const geminiModel = document.getElementById('geminiModelSelect')?.value || 'gemini-flash-latest';
+
+    localStorage.setItem('rey_api_provider', provider);
+    localStorage.setItem('rey_groq_key', groqKey);
+    localStorage.setItem('rey_gemini_key', geminiKey);
+    localStorage.setItem('rey_groq_model', groqModel);
+    localStorage.setItem('rey_gemini_model', geminiModel);
+
+    updateEngineStatusUI();
+    playSfx('receive');
+    alert(`Konfigurasi Mesin AI berhasil disimpan!\nMesin Aktif: ${provider.toUpperCase()}`);
+    closeCustomSettings();
+}
+
+function updateEngineStatusUI() {
+    const provider = localStorage.getItem('rey_api_provider') || 'groq';
+    const groqKey = localStorage.getItem('rey_groq_key') || DEFAULT_GROQ_KEY;
+    const geminiKey = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
+    const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
+    const geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+
+    const statusTag = document.getElementById('userStatusTag');
+    const banner = document.getElementById('engineStatusBanner');
+    const bannerText = document.getElementById('engineStatusText');
+
+    let label = "© Rey472 • ⚡ Groq Turbo (0.5s)";
+    let bannerDesc = `Mesin Aktif: ⚡ Groq Cloud (${groqModel}) - Ultra Cepat ~0.5s`;
+    let bannerClass = "engine-status-banner engine-groq";
+
+    if (provider === 'gemini') {
+        label = `© Rey472 • ✨ Gemini Flash`;
+        bannerDesc = `Mesin Aktif: ✨ Google Gemini (${geminiModel}) - Penalaran & Vision`;
+        bannerClass = "engine-status-banner engine-gemini";
+    } else if (provider === 'default' || (!groqKey && !geminiKey)) {
+        label = `© Rey472 • 🌐 Multi AI Bebas`;
+        bannerDesc = `Mesin Aktif: 🌐 Bebas (Pollinations Hub - Gratis)`;
+        bannerClass = "engine-status-banner engine-default";
+    }
+
+    if (statusTag) statusTag.innerText = label;
+    if (banner) banner.className = bannerClass;
+    if (bannerText) bannerText.innerHTML = bannerDesc;
+}
+
+function initEngineConfig() {
+    if (!localStorage.getItem('rey_api_provider')) {
+        localStorage.setItem('rey_api_provider', 'groq');
+        localStorage.setItem('rey_groq_key', DEFAULT_GROQ_KEY);
+        localStorage.setItem('rey_gemini_key', DEFAULT_GEMINI_KEY);
+        localStorage.setItem('rey_groq_model', 'openai/gpt-oss-120b');
+        localStorage.setItem('rey_gemini_model', 'gemini-flash-latest');
+    }
+    updateEngineStatusUI();
 }
 
 function saveCustomSettings() {
