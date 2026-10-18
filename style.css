@@ -115,15 +115,25 @@ body { background: var(--bg-color); color: var(--text-main); margin: 0; padding:
 .brand-text h1 { font-size: 15px; margin: 0; color: #fff; font-weight: 700; }
 .brand-text p { font-size: 10px; margin: 0; color: var(--text-muted); font-family: monospace; }
 
-.header-actions { display: flex; align-items: center; gap: 8px; }
-select.model-select { background: rgba(11, 15, 23, 0.95); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; outline: none; cursor: pointer; max-width: 165px; text-overflow: ellipsis; }
+.header-actions { display: flex; align-items: center; gap: 6px; }
+select.model-select { background: rgba(11, 15, 23, 0.95); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 7px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; outline: none; cursor: pointer; max-width: 135px; text-overflow: ellipsis; }
 select.model-select optgroup { background: #0f172a; color: #94a3b8; font-size: 10px; font-weight: bold; }
 select.model-select option { background: #0b0f17; color: #f8fafc; font-size: 11px; padding: 6px; }
 
-.safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+select.persona-select { background: rgba(11, 15, 23, 0.95); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 7px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; outline: none; cursor: pointer; max-width: 100px; text-overflow: ellipsis; }
+select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 11px; padding: 6px; }
+
+.safelink-btn { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 7px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .safelink-btn.active-vip { background: linear-gradient(135deg, #f59e0b, #d97706); }
 
-.icon-btn { background: rgba(30, 41, 59, 0.7); color: #ef4444; border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn { background: rgba(30, 41, 59, 0.7); color: #38bdf8; border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
+.icon-btn#clearBtn { color: #ef4444; }
+.icon-btn.muted { color: #64748b; opacity: 0.7; }
+
+/* Voice Input Mic Button & Pulsing Aura */
+.voice-btn { color: #38bdf8; transition: all 0.25s ease; }
+@keyframes voiceRipple { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); } 50% { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(1); } }
+.voice-btn.recording { color: #ef4444 !important; background: rgba(239, 68, 68, 0.2) !important; animation: voiceRipple 1.2s infinite ease-in-out !important; }
 
 /* Presets Bar */
 .presets-bar { display: flex; gap: 8px; padding: 10px 16px; background: rgba(14, 22, 38, 0.5); border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
@@ -228,6 +238,64 @@ select.model-select option { background: #0b0f17; color: #f8fafc; font-size: 11p
     .bubble-content {
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+    }
+}
+
+/* KaTeX Math Equation Styling */
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 10px;
+    margin: 10px 0;
+    background: rgba(11, 15, 23, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(56, 189, 248, 0.15);
+}
+.katex {
+    font-size: 1.05em !important;
+    color: #f1f5f9;
+}
+
+/* Print View Khusus Cetak Dokumen / Simpan PDF */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    #lockSection, #bgCanvas, .ambient-glow, .cyber-grid, .wallpaper-bg, .app-header, .presets-bar, .input-bar-container, .feature-menu, .copy-action, #safelinkModal, .footer-tag {
+        display: none !important;
+    }
+    #mainSection {
+        display: block !important;
+        max-width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+    }
+    .chat-container {
+        overflow: visible !important;
+        height: auto !important;
+        padding: 10px !important;
+    }
+    .chat-bubble {
+        max-width: 100% !important;
+        margin-bottom: 14px !important;
+        page-break-inside: avoid;
+    }
+    .bubble-content {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+    }
+    .bubble-content code, .bubble-content pre {
+        color: #0f172a !important;
+        background: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    .avatar {
+        display: none !important;
     }
 }
 
