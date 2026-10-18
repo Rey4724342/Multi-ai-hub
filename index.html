@@ -24,7 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.5">
+    <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body>
 
@@ -87,7 +87,11 @@
         </div>
 
         <div class="sidebar-footer">
-            <div class="sidebar-footer-item" onclick="openCustomSettings()">
+            <div class="sidebar-footer-item" onclick="openCustomSettings('apikey')">
+                <i class="fa-solid fa-key" style="color: #38bdf8;"></i>
+                <span>Mesin AI & Kunci API</span>
+            </div>
+            <div class="sidebar-footer-item" onclick="openCustomSettings('profile')">
                 <i class="fa-solid fa-sliders"></i>
                 <span>Profil & Aturan Kustom</span>
             </div>
@@ -112,7 +116,7 @@
                     <img src="1791994468675.jpg" id="brandLogo" class="header-brand-logo" alt="Logo" />
                     <div class="brand-text">
                         <h1 id="headerChatTitle">Rey Multi AI Hub</h1>
-                        <p id="userStatusTag">© Rey472 • Kecepatan Turbo 🔥</p>
+                        <p id="userStatusTag" onclick="openCustomSettings('apikey')" style="cursor: pointer;" title="Klik untuk ganti Mesin AI & API Key">© Rey472 • ⚡ Memuat Mesin...</p>
                     </div>
                 </div>
             </div>
@@ -459,37 +463,141 @@
         </div>
     </div>
 
-    <!-- MODAL PROFIL & CUSTOM INSTRUCTIONS (PENGATURAN KUSTOM AI) -->
+    <!-- MODAL PENGATURAN MESIN AI & PROFIL KUSTOM (BYOK) -->
     <div id="customSettingsModal" class="modal-overlay">
-        <div class="toolbox-box" style="max-width: 480px;">
+        <div class="toolbox-box" style="max-width: 520px;">
             <div class="toolbox-header">
                 <div class="toolbox-title">
                     <i class="fa-solid fa-sliders" style="color: var(--accent);"></i>
-                    <span>Kustomisasi & Profil Pengguna</span>
+                    <span id="customSettingsTitle">Pengaturan Mesin & Profil</span>
                 </div>
                 <button class="toolbox-close-btn" onclick="closeCustomSettings()"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            
+            <!-- Tab Navigasi Pengaturan -->
+            <div class="toolbox-tabs">
+                <button class="toolbox-tab active" id="settingsTabApiKey" onclick="switchSettingsTab('apikey')">
+                    <i class="fa-solid fa-key"></i> Mesin & API Key
+                </button>
+                <button class="toolbox-tab" id="settingsTabProfile" onclick="switchSettingsTab('profile')">
+                    <i class="fa-solid fa-user-gear"></i> Profil & Gaya
+                </button>
+            </div>
+
             <div class="toolbox-body">
-                <div class="tool-desc">
-                    Sesuaikan preferensi agar AI menjawab sesuai profesi, gaya, dan kebutuhan pribadimu secara otomatis!
+                <!-- TAB 1: API KEYS & ENGINE -->
+                <div id="settings-tab-apikey" class="settings-content active">
+                    <div class="tool-desc">
+                        Hubungkan API Key pribadi (BYOK) untuk kecepatan turbo <strong>~0.5 detik</strong>, tanpa batasan antrean, dan penalaran AI tercerdas dunia!
+                    </div>
+
+                    <!-- Status Banner -->
+                    <div id="engineStatusBanner" class="engine-status-banner engine-groq">
+                        <span class="status-indicator-dot"></span>
+                        <span id="engineStatusText">Mesin Aktif: Memeriksa konfigurasi...</span>
+                    </div>
+
+                    <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                        <label style="font-weight: 700; color: #fff;">Pilih Mesin AI Utama:</label>
+                        <select id="apiProviderSelect" class="tool-select" style="max-width: 100%; width: 100%;" onchange="onApiProviderChanged()">
+                            <option value="groq" selected>⚡ Groq Cloud (Ultra Cepat ~0.5s - Respon Kilat)</option>
+                            <option value="gemini">✨ Google Gemini (Penalaran Mendalam & Multimodal)</option>
+                            <option value="default">🌐 Bebas (Pollinations Hub - Gratis Tanpa Key)</option>
+                        </select>
+                    </div>
+
+                    <!-- Form Groq -->
+                    <div id="groqFormArea" class="provider-box">
+                        <div class="provider-header">
+                            <i class="fa-solid fa-bolt" style="color: #38bdf8;"></i>
+                            <span>Konfigurasi Groq Turbo (~0.5 Detik)</span>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Model Groq:</label>
+                            <select id="groqModelSelect" class="tool-select" style="max-width: 100%; width: 100%;">
+                                <option value="openai/gpt-oss-120b" selected>🌟 openai/gpt-oss-120b (Flagship Pintar & Luas)</option>
+                                <option value="openai/gpt-oss-20b">🚀 openai/gpt-oss-20b (Mode Kilat Ekstrem 0.5s)</option>
+                                <option value="qwen/qwen3.8-27b">💻 qwen/qwen3.8-27b (Spesialis Koding)</option>
+                            </select>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Groq API Key (gsk_...):</label>
+                            <div class="key-input-container">
+                                <input type="password" id="groqApiKeyInput" class="tool-input key-input" placeholder="Masukkan gsk_..." />
+                                <button type="button" class="key-eye-btn" onclick="toggleKeyVisibility('groqApiKeyInput', this)"><i class="fa-solid fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="key-action-buttons">
+                            <button type="button" class="key-mini-btn" onclick="applyDefaultGroqKey()"><i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Key Groq Rey</button>
+                            <button type="button" class="key-mini-btn test-btn" id="btnTestGroq" onclick="testGroqConnection()"><i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Groq</button>
+                        </div>
+                        <div id="groqTestFeedback" class="test-feedback-box" style="display: none;"></div>
+                    </div>
+
+                    <!-- Form Gemini -->
+                    <div id="geminiFormArea" class="provider-box" style="display: none;">
+                        <div class="provider-header">
+                            <i class="fa-solid fa-gem" style="color: #a855f7;"></i>
+                            <span>Konfigurasi Google Gemini</span>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Model Gemini:</label>
+                            <select id="geminiModelSelect" class="tool-select" style="max-width: 100%; width: 100%;">
+                                <option value="gemini-flash-latest" selected>⚡ gemini-flash-latest (Super Cepat & Multimodal)</option>
+                                <option value="gemini-2.5-flash">✨ gemini-2.5-flash (Generasi Terbaru)</option>
+                            </select>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Gemini API Key (AQ... atau AIza...):</label>
+                            <div class="key-input-container">
+                                <input type="password" id="geminiApiKeyInput" class="tool-input key-input" placeholder="Masukkan API Key Gemini..." />
+                                <button type="button" class="key-eye-btn" onclick="toggleKeyVisibility('geminiApiKeyInput', this)"><i class="fa-solid fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="key-action-buttons">
+                            <button type="button" class="key-mini-btn" onclick="applyDefaultGeminiKey()"><i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Key Gemini Rey</button>
+                            <button type="button" class="key-mini-btn test-btn" id="btnTestGemini" onclick="testGeminiConnection()"><i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Gemini</button>
+                        </div>
+                        <div id="geminiTestFeedback" class="test-feedback-box" style="display: none;"></div>
+                    </div>
+
+                    <!-- Free Pollinations Info -->
+                    <div id="defaultFormArea" class="provider-box" style="display: none;">
+                        <div class="provider-header">
+                            <i class="fa-solid fa-globe" style="color: #10b981;"></i>
+                            <span>Kluster Publik Bebas (Tanpa Kunci)</span>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 8px 0 0 0;">
+                            Menggunakan server AI publik Pollinations AI secara gratis. Tidak memerlukan API key, namun kecepatan bergantung pada kepadatan jaringan publik.
+                        </p>
+                    </div>
+
+                    <button class="tool-action-btn" style="margin-top: 14px;" onclick="saveApiSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Mesin AI</button>
                 </div>
-                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <label>Nama Panggilan Anda:</label>
-                    <input type="text" id="customUserName" class="tool-input" placeholder="Contoh: Reyhan / Kak Rey" />
+
+                <!-- TAB 2: PROFIL & GAYA -->
+                <div id="settings-tab-profile" class="settings-content" style="display: none;">
+                    <div class="tool-desc">
+                        Sesuaikan preferensi agar AI menjawab sesuai profesi, gaya, dan kebutuhan pribadimu secara otomatis!
+                    </div>
+                    <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <label>Nama Panggilan Anda:</label>
+                        <input type="text" id="customUserName" class="tool-input" placeholder="Contoh: Reyhan / Kak Rey" />
+                    </div>
+                    <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <label>Profesi / Peran Anda:</label>
+                        <input type="text" id="customUserRole" class="tool-input" placeholder="Contoh: Mahasiswa Teknik Informatika / Siswa SMA / Konten Kreator" />
+                    </div>
+                    <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <label>Aturan Khusus Cara AI Menjawab:</label>
+                        <textarea id="customUserRules" class="tool-textarea" style="height: 85px;" placeholder="Contoh: Selalu jelaskan poin per poin, sertakan analogi mudah, dan jika tentang koding gunakan bahasa JavaScript atau Python."></textarea>
+                    </div>
+                    <button class="tool-action-btn" onclick="saveCustomSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Preferensi Profil</button>
                 </div>
-                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <label>Profesi / Peran Anda:</label>
-                    <input type="text" id="customUserRole" class="tool-input" placeholder="Contoh: Mahasiswa Teknik Informatika / Siswa SMA / Konten Kreator" />
-                </div>
-                <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <label>Aturan Khusus Cara AI Menjawab:</label>
-                    <textarea id="customUserRules" class="tool-textarea" style="height: 85px;" placeholder="Contoh: Selalu jelaskan poin per poin, sertakan analogi mudah, dan jika tentang koding gunakan bahasa JavaScript atau Python."></textarea>
-                </div>
-                <button class="tool-action-btn" onclick="saveCustomSettings()"><i class="fa-solid fa-floppy-disk"></i> Simpan Preferensi Profil</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=3.5"></script>
+    <script src="script.js?v=4.0"></script>
 </body>
 </html>
