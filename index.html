@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rey Multi AI Hub – Rey472</title>
     <link rel="icon" type="image/jpeg" href="1791994468675.jpg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#070a11">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rey AI">
+    <link rel="apple-touch-icon" href="1791994468675.jpg">
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <!-- KaTeX untuk Render Rumus Matematika Presisi -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -57,32 +70,40 @@
             </div>
             <div class="header-actions">
                 <button class="safelink-btn" id="vipBtn">
-                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">Akses VIP</span>
+                    <i class="fa-solid fa-gem"></i> <span id="vipBtnText">VIP</span>
                 </button>
+                <select id="personaSelect" class="persona-select" onchange="onPersonaChanged()" title="Gaya Bicara AI">
+                    <option value="standard" selected>🎯 Standar</option>
+                    <option value="gaul">😎 Gaul</option>
+                    <option value="formal">🎓 Formal</option>
+                    <option value="tutor">📐 Tutor PR</option>
+                    <option value="curhat">☕ Curhat</option>
+                </select>
                 <select id="modelSelect" class="model-select" title="Pilih Model AI">
                     <optgroup label="🌟 Model Utama (Serbaguna)">
-                        <option value="openai" selected>⚡ ChatGPT (GPT-4o)</option>
-                        <option value="deepseek">🧠 DeepSeek R1 (Logika)</option>
-                        <option value="claude">✍️ Claude 3.5 (Analisis)</option>
-                        <option value="gemini">✨ Gemini 1.5 Pro</option>
+                        <option value="openai" selected>⚡ ChatGPT</option>
+                        <option value="deepseek">🧠 DeepSeek R1</option>
+                        <option value="claude">✍️ Claude 3.5</option>
+                        <option value="gemini">✨ Gemini 1.5</option>
                     </optgroup>
                     <optgroup label="💻 Coding & Sains">
-                        <option value="qwen-coder">👨‍💻 Qwen Coder 2.5</option>
-                        <option value="deepseek">💡 DeepSeek V3 (Sains)</option>
+                        <option value="qwen-coder">👨‍💻 Qwen Coder</option>
+                        <option value="deepseek">💡 DeepSeek V3</option>
                     </optgroup>
                     <optgroup label="🦙 Open-Source Dunia">
-                        <option value="llama">🦙 Meta Llama 3.3 (70B)</option>
-                        <option value="mistral">🌪️ Mistral Nemo</option>
-                        <option value="qwen">🌏 Alibaba Qwen 2.5</option>
+                        <option value="llama">🦙 Llama 3.3</option>
+                        <option value="mistral">🌪️ Mistral</option>
+                        <option value="qwen">🌏 Qwen 2.5</option>
                     </optgroup>
                     <optgroup label="🚀 Mode Kilat (Ultra Cepat)">
                         <option value="openai">⚡ GPT-4o Mini</option>
                         <option value="gemini">⚡ Gemini Flash</option>
                     </optgroup>
                     <optgroup label="🔍 Pencarian Internet">
-                        <option value="searchgpt">🌐 Web Search AI</option>
+                        <option value="searchgpt">🌐 Web Search</option>
                     </optgroup>
                 </select>
+                <button class="icon-btn" id="sfxToggleBtn" onclick="toggleSfx()" title="Efek Suara Sci-Fi"><i id="sfxIcon" class="fa-solid fa-volume-high"></i></button>
                 <button class="icon-btn" id="clearBtn" title="Hapus Riwayat Obrolan"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </div>
@@ -123,9 +144,25 @@
                     <i class="fa-solid fa-paperclip"></i>
                     <span>Berkas</span>
                 </div>
+                <div class="feature-icon-item" onclick="exportToPdf()">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Cetak PDF</span>
+                </div>
                 <div class="feature-icon-item" onclick="downloadChatHistory()">
                     <i class="fa-solid fa-file-arrow-down"></i>
-                    <span>Simpan Obrolan</span>
+                    <span>Simpan TXT</span>
+                </div>
+                <div class="feature-icon-item" onclick="triggerPwaInstall()">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span>Pasang HP</span>
+                </div>
+                <div class="feature-icon-item" onclick="setPersonaMode('tutor')">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>Tutor PR</span>
+                </div>
+                <div class="feature-icon-item" onclick="toggleVoiceInput()">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                    <span>Voice Mic</span>
                 </div>
             </div>
 
@@ -135,6 +172,20 @@
                     <div class="feature-list-text">
                         <h4>Buat Gambar (Gambar AI)</h4>
                         <p>Hasilkan gambar realistis langsung dari teks deskripsi</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" onclick="setPersonaMode('tutor')">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <div class="feature-list-text">
+                        <h4>Mode Tutor PR & Matematika</h4>
+                        <p>Solusi soal & rumus LaTeX langkah demi langkah</p>
+                    </div>
+                </div>
+                <div class="feature-list-item" id="pwaListItem" onclick="triggerPwaInstall()">
+                    <i class="fa-solid fa-circle-down"></i>
+                    <div class="feature-list-text">
+                        <h4>Pasang Aplikasi di HP (PWA)</h4>
+                        <p>Tambahkan ke layar utama HP tanpa buka browser</p>
                     </div>
                 </div>
             </div>
@@ -151,7 +202,8 @@
         <div class="input-bar-container">
             <div class="input-bar">
                 <button id="toggleMenuBtn" class="action-icon-btn" title="Menu Tambahan"><i class="fa-solid fa-plus"></i></button>
-                <textarea id="promptInput" rows="1" placeholder="Ketik pesan atau pilih fitur (+) di samping..."></textarea>
+                <textarea id="promptInput" rows="1" placeholder="Ketik pesan atau tekan mic suara..."></textarea>
+                <button id="voiceBtn" class="action-icon-btn voice-btn" onclick="toggleVoiceInput()" title="Ketik Pakai Suara"><i class="fa-solid fa-microphone"></i></button>
                 <button id="sendBtn" class="send-button"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
             <div class="footer-tag">Rey Multi AI Hub • Edisi Turbo oleh Rey472</div>
