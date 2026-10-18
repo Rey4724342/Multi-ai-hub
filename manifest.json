@@ -1,0 +1,21 @@
+{
+  "name": "Rey Multi AI Hub",
+  "short_name": "Rey AI",
+  "description": "Portal Multi-AI Canggih, Akurat, dan Berkecepatan Turbo oleh Rey472",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070a11",
+  "theme_color": "#070a11",
+  "icons": [
+    {
+      "src": "1791994468675.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "1791994468675.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
