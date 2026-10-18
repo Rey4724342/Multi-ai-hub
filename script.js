@@ -27,6 +27,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ANIMASI PARTIKEL WALLPAPER FUTURISTIK INTERAKTIF
+// ANIMASI PARTIKEL WALLPAPER FUTURISTIK INTERAKTIF (DIOPTIMALKAN UNTUK HP & LAPTOP)
 function initBackgroundParticles() {
     const canvas = document.getElementById('bgCanvas');
     if (!canvas) return;
@@ -34,26 +35,42 @@ function initBackgroundParticles() {
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
 
+    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     window.addEventListener('resize', () => {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
     });
 
     const particles = [];
-    const count = Math.min(50, Math.floor((width * height) / 18000));
+    // Di HP hanya gunakan 12 partikel ringan agar ketikan pesan lancar 100% tanpa delay
+    const count = isMobile ? 12 : Math.min(45, Math.floor((width * height) / 20000));
 
     for (let i = 0; i < count; i++) {
         particles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.6,
-            vy: (Math.random() - 0.5) * 0.6,
+            vx: (Math.random() - 0.5) * (isMobile ? 0.35 : 0.6),
+            vy: (Math.random() - 0.5) * (isMobile ? 0.35 : 0.6),
             radius: Math.random() * 2 + 1,
             color: Math.random() > 0.4 ? 'rgba(56, 189, 248, ' : 'rgba(139, 92, 246, '
         });
     }
 
+    let isTypingActive = false;
+    const promptInput = document.getElementById('promptInput');
+    if (promptInput) {
+        promptInput.addEventListener('focus', () => { isTypingActive = true; });
+        promptInput.addEventListener('blur', () => { isTypingActive = false; });
+    }
+
     function animate() {
+        // Jika sedang mengetik di HP, istirahatkan render canvas agar keyboard langsung responsif
+        if (isMobile && isTypingActive) {
+            requestAnimationFrame(animate);
+            return;
+        }
+
         ctx.clearRect(0, 0, width, height);
 
         for (let i = 0; i < particles.length; i++) {
@@ -71,20 +88,22 @@ function initBackgroundParticles() {
             ctx.fillStyle = p.color + '0.6)';
             ctx.fill();
 
-            // Hubungkan garis halus jika partikel saling berdekatan
-            for (let j = i + 1; j < particles.length; j++) {
-                const p2 = particles[j];
-                const dx = p.x - p2.x;
-                const dy = p.y - p2.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+            // Garis koneksi hanya dihitung di laptop/desktop agar GPU HP tidak overheat
+            if (!isMobile) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 110) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = `rgba(56, 189, 248, ${0.18 * (1 - dist / 110)})`;
-                    ctx.lineWidth = 0.8;
-                    ctx.stroke();
+                    if (dist < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(56, 189, 248, ${0.18 * (1 - dist / 110)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
                 }
             }
         }
@@ -307,6 +326,11 @@ function setupAppListeners() {
     if (sendBtn) sendBtn.addEventListener('click', sendPrompt);
     if (clearBtn) clearBtn.addEventListener('click', clearChat);
     if (promptInput) {
+        // Auto-expand textarea tinggi dinamis & update instan di HP
+        promptInput.addEventListener('input', function() {
+            this.style.height = '24px';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
         promptInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendPrompt(); }
         });
@@ -356,8 +380,8 @@ function getActionButtonsHTML() {
 function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHistory, callback) {
     let cursor = 0;
     const total = fullText.length;
-    // Lompatan karakter adaptif: selesai dalam 1 detik berapa pun panjang teksnya!
-    const step = Math.max(8, Math.ceil(total / 35));
+    // Lompatan karakter adaptif: selesai kilat dalam 0.6 - 0.8 detik
+    const step = Math.max(12, Math.ceil(total / 24));
     
     // Tampilkan container ringan untuk mengetik cepat tanpa membebani browser
     targetContainer.innerHTML = `<div class="live-typing-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>`;
@@ -376,7 +400,7 @@ function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHi
             box.textContent = headerDecoration + fullText.substring(0, cursor) + " ▌";
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-    }, 15); // Render super cepat 60 FPS
+    }, 12); // Render super cepat 60 FPS
 }
 
 // MESIN STREAMING & RESPON KILAT REAL-TIME
@@ -403,14 +427,17 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
 3. KOREKSI CERDAS TEKS KAMERA/OCR: Jika teks berasal dari foto kamera, perbaiki otomatis kemungkinan salah baca huruf atau typo akibat bayangan/kualitas kamera berdasarkan konteks kalimat aslinya.
 4. BAHASA INDONESIA YANG NATURAL: Gunakan Bahasa Indonesia yang jelas, profesional, dan mudah dipahami pengguna.`;
 
-    // Batas waktu timeout cepat (3.5 detik) agar tidak menggantung lama jika server antre
+    targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-fade"></i> Membaca dan menyiapkan jawaban...</span></div>`;
+    const streamBox = targetContainer.querySelector('.live-stream-box');
+
+    // Batas waktu timeout 8.5 detik agar koneksi HP tetap lancar
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 8500);
 
     let accumulatedText = "";
 
     try {
-        const response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+        const response = await fetch("https://text.pollinations.ai/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -430,9 +457,8 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
         if (response.ok && response.body) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
-            targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>`;
-            const streamBox = targetContainer.querySelector('.live-stream-box');
             let renderPending = false;
+            let hasFirstToken = false;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -442,11 +468,17 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
                 const lines = chunk.split('\n');
 
                 for (let line of lines) {
-                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
-                            const parsed = JSON.parse(line.replace('data: ', ''));
-                            const content = parsed.choices?.[0]?.delta?.content || "";
+                            const parsed = JSON.parse(trimmed.replace('data: ', ''));
+                            const delta = parsed.choices?.[0]?.delta;
+                            const content = delta?.content || (delta?.reasoning && !accumulatedText ? "" : delta?.reasoning) || "";
                             if (content) {
+                                if (!hasFirstToken) {
+                                    hasFirstToken = true;
+                                    streamBox.textContent = "";
+                                }
                                 accumulatedText += content;
 
                                 if (!renderPending) {
@@ -470,10 +502,10 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
             }
         }
     } catch (e) {
-        console.log("Beralih ke mesin turbo kilat...");
+        console.log("Beralih ke mesin turbo kilat fallback...", e);
     }
 
-    // JALUR KILAT TURBO ENGINE (JIKA STREAMING MACET / TIMEOUT)
+    // JALUR KILAT TURBO ENGINE (JIKA STREAMING TERPUTUS)
     try {
         const randomSeed = Math.floor(Math.random() * 999999);
         const indoPrefix = encodeURIComponent("Jawablah dalam bahasa Indonesia dengan lengkap dan tepat: ");
@@ -511,6 +543,7 @@ async function sendPrompt() {
     }
 
     promptInput.value = '';
+    promptInput.style.height = '24px';
 
     const userBubble = document.createElement('div');
     userBubble.className = 'chat-bubble user';
