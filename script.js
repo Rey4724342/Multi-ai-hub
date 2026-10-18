@@ -376,15 +376,25 @@ function getActionButtonsHTML() {
     `;
 }
 
-// MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE - TANPA LAG)
-function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHistory, callback) {
+// PEMBERSIH KONTEN: HILANGKAN PROSES PIKIR INTERNAL & TAG FORMAT ANEH
+function cleanAIOutput(text) {
+    if (!text) return "";
+    return text
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/Thinking Process:[\s\S]*?(?=\n\n|$)/gi, '')
+        .replace(/User:\s*"[^"]*"\s*Indonesian\.?\s*Response:?\s*/gi, '')
+        .trim();
+}
+
+// MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE - RAPI & TANPA LAG)
+function playTurboTypewriter(fullText, targetContainer, chatHistory, callback) {
+    const cleanedText = cleanAIOutput(fullText);
     let cursor = 0;
-    const total = fullText.length;
+    const total = cleanedText.length;
     // Lompatan karakter adaptif: selesai kilat dalam 0.6 - 0.8 detik
     const step = Math.max(12, Math.ceil(total / 24));
     
-    // Tampilkan container ringan untuk mengetik cepat tanpa membebani browser
-    targetContainer.innerHTML = `<div class="live-typing-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></div>`;
+    targetContainer.innerHTML = `<div class="live-typing-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"></div>`;
     const box = targetContainer.querySelector('.live-typing-box');
 
     const interval = setInterval(() => {
@@ -393,17 +403,17 @@ function playTurboTypewriter(fullText, headerDecoration, targetContainer, chatHi
             cursor = total;
             clearInterval(interval);
             // Hanya parse Markdown SATU KALI di akhir agar format rapi tanpa ngelag!
-            targetContainer.innerHTML = marked.parse(headerDecoration + fullText) + getActionButtonsHTML();
+            targetContainer.innerHTML = marked.parse(cleanedText) + getActionButtonsHTML();
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
             if (callback) callback();
         } else {
-            box.textContent = headerDecoration + fullText.substring(0, cursor) + " ▌";
+            box.textContent = cleanedText.substring(0, cursor) + " ▌";
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
         }
     }, 12); // Render super cepat 60 FPS
 }
 
-// MESIN STREAMING & RESPON KILAT REAL-TIME
+// MESIN STREAMING & RESPON KILAT REAL-TIME (TULISAN RAPI & BERSIH)
 async function streamAIResponse(promptText, selectedModel, targetContainer) {
     const chatHistory = document.getElementById('chatHistory');
     let fullPrompt = promptText;
@@ -417,17 +427,16 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         }
     }
 
-    const headerDecoration = `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    // SISTEM PROMPT PRESISI TINGGI (ANTI-SALAH & ANTI-HALUSINASI)
-    const systemPrompt = `Kamu adalah asisten AI super cerdas, sangat teliti, dan berpengetahuan luas dari Rey Multi AI Hub.
-Pedoman WAJIB demi AKURASI MAKSIMAL:
-1. AKURASI MUTLAK & FAKTA NYATA: Setiap jawaban, tanggal, nama, rumus matematika, dan penjelasan ilmiah harus 100% tepat, akurat, dan dapat diverifikasi. Jangan pernah mengarang data, rumus, atau fakta fiktif.
-2. PENJELASAN SISTEMATIS (STEP-BY-STEP): Untuk soal matematika, logika, ujian/PR, atau kode pemrograman, jabarkan langkah-langkah penyelesaiannya secara runtut, logis, dan teliti hingga ke kesimpulan akhir.
-3. KOREKSI CERDAS TEKS KAMERA/OCR: Jika teks berasal dari foto kamera, perbaiki otomatis kemungkinan salah baca huruf atau typo akibat bayangan/kualitas kamera berdasarkan konteks kalimat aslinya.
-4. BAHASA INDONESIA YANG NATURAL: Gunakan Bahasa Indonesia yang jelas, profesional, dan mudah dipahami pengguna.`;
+    // SISTEM PROMPT FORMAT RAPI & AKURASI TINGGI
+    const systemPrompt = `Kamu adalah asisten AI resmi dari Rey Multi AI Hub (karya Rey472).
+PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & TIDAK ACAK-ACAKAN):
+1. SUSUNAN RAPI & STRUKTUR INDAH: Tulis jawaban dengan paragraf rapi dan pemisah baris yang cukup. Gunakan penomoran (1, 2, 3) atau daftar poin (-) jika menjabarkan informasi panjang.
+2. LANGSUNG KE INTI JAWABAN: Jangan pernah menuliskan proses berpikir internal (seperti "Thinking Process:", "User:", "Response:", atau tag <think>). Berikan langsung jawaban yang bersih dan tuntas.
+3. AKURASI 100% TANPA KESALAHAN: Fakta, nama, tanggal, dan rumus matematika harus 100% presisi dan terverifikasi.
+4. SOAL & MATEMATIKA: Tulis rumus dan langkah penyelesaian secara runtut dan teratur hingga hasil akhir.
+5. BAHASA INDONESIA YANG BAIK: Gunakan Bahasa Indonesia yang luwes, santun, dan mudah dipahami.`;
 
-    targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-fade"></i> Membaca dan menyiapkan jawaban...</span></div>`;
+    targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-fade"></i> Membaca dan menyiapkan jawaban...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
 
     // Batas waktu timeout 8.5 detik agar koneksi HP tetap lancar
@@ -446,7 +455,7 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
                     { role: "system", content: systemPrompt },
                     { role: "user", content: fullPrompt }
                 ],
-                temperature: 0.2, // Nilai rendah (0.2) agar jawaban fokus pada fakta presisi, bukan mengarang
+                temperature: 0.2, // Nilai rendah (0.2) agar fokus pada fakta presisi & tidak melantur
                 stream: true
             }),
             signal: controller.signal
@@ -472,8 +481,8 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
                     if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
                             const parsed = JSON.parse(trimmed.replace('data: ', ''));
-                            const delta = parsed.choices?.[0]?.delta;
-                            const content = delta?.content || (delta?.reasoning && !accumulatedText ? "" : delta?.reasoning) || "";
+                            // HANYA ambil content resmi, abaikan internal reasoning agar teks tidak kotor
+                            const content = parsed.choices?.[0]?.delta?.content || "";
                             if (content) {
                                 if (!hasFirstToken) {
                                     hasFirstToken = true;
@@ -484,7 +493,8 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
                                 if (!renderPending) {
                                     renderPending = true;
                                     requestAnimationFrame(() => {
-                                        streamBox.textContent = headerDecoration + accumulatedText + " ▌";
+                                        const cleanStream = cleanAIOutput(accumulatedText);
+                                        streamBox.textContent = cleanStream ? cleanStream + " ▌" : "Mengetik...";
                                         if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
                                         renderPending = false;
                                     });
@@ -495,8 +505,9 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
                 }
             }
 
-            if (accumulatedText.trim() !== "") {
-                targetContainer.innerHTML = marked.parse(headerDecoration + accumulatedText) + getActionButtonsHTML();
+            const cleanFinal = cleanAIOutput(accumulatedText);
+            if (cleanFinal !== "") {
+                targetContainer.innerHTML = marked.parse(cleanFinal) + getActionButtonsHTML();
                 if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
                 return;
             }
@@ -508,20 +519,20 @@ Pedoman WAJIB demi AKURASI MAKSIMAL:
     // JALUR KILAT TURBO ENGINE (JIKA STREAMING TERPUTUS)
     try {
         const randomSeed = Math.floor(Math.random() * 999999);
-        const indoPrefix = encodeURIComponent("Jawablah dalam bahasa Indonesia dengan lengkap dan tepat: ");
+        const indoPrefix = encodeURIComponent("Jawablah dengan rapi, jelas, dan tepat dalam bahasa Indonesia: ");
         const fallbackUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=${selectedModel || 'openai'}&seed=${randomSeed}`;
         
         const fallbackRes = await fetch(fallbackUrl);
         if (fallbackRes.ok) {
             const text = await fallbackRes.text();
             if (text && text.trim().length > 0) {
-                playTurboTypewriter(text, headerDecoration, targetContainer, chatHistory);
+                playTurboTypewriter(text, targetContainer, chatHistory);
                 return;
             }
         }
     } catch (e) {}
 
-    targetContainer.innerHTML = marked.parse(headerDecoration + "Waduh bray, koneksi AI sedang padat. Silakan tekan tombol kirim sekali lagi ya!") + getActionButtonsHTML();
+    targetContainer.innerHTML = marked.parse("Maaf, koneksi server AI sedang padat. Silakan tekan tombol kirim sekali lagi ya!") + getActionButtonsHTML();
 }
 
 async function sendPrompt() {
@@ -553,7 +564,7 @@ async function sendPrompt() {
 
     const aiBubble = document.createElement('div');
     aiBubble.className = isVipUser ? 'chat-bubble ai vip' : 'chat-bubble ai';
-    aiBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Bot sedang mengetik...</span></div>`;
+    aiBubble.innerHTML = `<div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="bubble-content"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Menyiapkan jawaban...</span></div>`;
     chatHistory.appendChild(aiBubble);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
@@ -564,7 +575,7 @@ async function sendPrompt() {
     if (isImageGenMode || userPrompt.toLowerCase().startsWith('buat gambar:')) {
         const imgP = userPrompt.replace(/buat gambar:/i, '').trim();
         const finalOutput = `Hasil Pembuatan Gambar: **"${imgP}"**\n\n![Gambar AI](https://image.pollinations.ai/prompt/${encodeURIComponent(imgP)}?width=1024&height=1024&nologo=true)`;
-        targetContainer.innerHTML = marked.parse(`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Prompt 𖤐 : Rey Multi AI Hub © Rey472 \n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` + finalOutput);
+        targetContainer.innerHTML = marked.parse(finalOutput);
         isImageGenMode = false;
     } else {
         await streamAIResponse(userPrompt, model, targetContainer);
