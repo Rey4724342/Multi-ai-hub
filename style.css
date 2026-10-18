@@ -12,7 +12,8 @@
 }
 
 * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
+html { height: 100%; height: 100vh; height: 100dvh; }
+body { background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; overflow: hidden; position: relative; }
 
 /* Wallpaper Futuristik & Cyber Grid */
 .wallpaper-bg {
@@ -105,7 +106,7 @@ body { background: var(--bg-color); color: var(--text-main); margin: 0; padding:
 .lock-btn:hover::after { transform: rotate(30deg) translate(50%, 50%); }
 
 /* Main Interface */
-#mainSection { display: none; flex-direction: column; height: 100vh; width: 100%; max-width: 800px; margin: auto; background: transparent; position: relative; z-index: 10; }
+#mainSection { display: none; flex-direction: column; height: 100%; height: 100vh; height: 100dvh; width: 100%; max-width: 800px; margin: auto; background: transparent; position: relative; z-index: 10; }
 
 /* App Header */
 .app-header { background: rgba(19, 27, 46, 0.7); backdrop-filter: blur(14px); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
@@ -179,7 +180,14 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
 .attachment-preview button { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 14px; }
 
 /* Input Floating Bar */
-.input-bar-container { padding: 12px 16px; background: rgba(19, 27, 46, 0.8); backdrop-filter: blur(16px); border-top: 1px solid var(--border); position: relative; }
+.input-bar-container { 
+    padding: 12px 16px; 
+    padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom, 0px))); 
+    background: rgba(19, 27, 46, 0.8); 
+    backdrop-filter: blur(16px); 
+    border-top: 1px solid var(--border); 
+    position: relative; 
+}
 .input-bar { display: flex; align-items: center; background: rgba(11, 15, 23, 0.95); border: 1px solid var(--border); border-radius: 28px; padding: 6px 8px 6px 12px; gap: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
 .input-bar textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; line-height: 1.4; outline: none; resize: none; height: 24px; min-height: 24px; max-height: 120px; padding: 2px 4px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
@@ -213,15 +221,27 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
 
 /* RESPONSIF & PERFORMA ZERO-LAG UNTUK PENGGUNA HP */
 @media (max-width: 768px) {
+    #mainSection {
+        height: 100%;
+        height: 100vh;
+        height: 100dvh;
+    }
     .input-bar-container {
-        padding: 8px 12px 14px 12px !important;
+        padding: 8px 12px calc(34px + env(safe-area-inset-bottom, 0px)) 12px !important;
         background: rgba(11, 15, 23, 0.98) !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
+    .input-bar-container .footer-tag {
+        display: none !important;
+    }
+    .feature-menu {
+        bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    }
     .input-bar {
-        padding: 5px 8px 5px 12px !important;
+        padding: 6px 8px 6px 12px !important;
         background: rgba(19, 27, 46, 0.95) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
     }
     .input-bar textarea {
         font-size: 16px !important;
@@ -757,6 +777,7 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
 .sidebar-footer {
     margin-top: auto;
     padding-top: 12px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
     border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
