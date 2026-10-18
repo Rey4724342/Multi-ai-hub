@@ -955,6 +955,161 @@ select.persona-select option { background: #0b0f17; color: #f8fafc; font-size: 1
     background: #ffffff;
 }
 
+/* PENGATURAN MESIN AI & API KEYS (BYOK) */
+.settings-content {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+.settings-content.active {
+    display: flex;
+}
+
+.engine-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #34d399;
+    font-weight: 600;
+}
+.engine-status-banner.engine-groq {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+}
+.engine-status-banner.engine-gemini {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: rgba(168, 85, 247, 0.35);
+    color: #c084fc;
+}
+.engine-status-banner.engine-default {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+
+.status-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    animation: blinkDot 1.4s infinite ease-in-out;
+}
+
+.provider-box {
+    background: rgba(11, 15, 23, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    transition: all 0.25s ease;
+}
+.provider-box:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+}
+
+.provider-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.key-input-container {
+    position: relative;
+    width: 100%;
+}
+.key-input-container .key-input {
+    width: 100%;
+    padding-right: 42px;
+    margin-bottom: 0;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+}
+.key-eye-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: color 0.2s;
+}
+.key-eye-btn:hover {
+    color: #fff;
+}
+
+.key-action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.key-mini-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
+    color: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.key-mini-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--accent);
+    color: #38bdf8;
+    transform: translateY(-1px);
+}
+.key-mini-btn.test-btn:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #34d399;
+}
+
+.test-feedback-box {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    animation: boxPopIn 0.2s ease;
+}
+.test-feedback-box.success {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+.test-feedback-box.error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+}
+.test-feedback-box.loading {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+}
+
 
 
 
