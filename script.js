@@ -947,3 +947,336 @@ function downloadChatHistory() {
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+// ==========================================
+// KOTAK ALAT AI PINTAR (AI TOOLBOX 6-IN-1)
+// ==========================================
+
+function openToolbox(tabId = 'paraphrase') {
+    playSfx('click');
+    const featureMenu = document.getElementById('featureMenu');
+    if (featureMenu) featureMenu.style.display = 'none';
+    const modal = document.getElementById('toolboxModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        switchToolTab(tabId);
+    }
+}
+
+function closeToolbox() {
+    playSfx('click');
+    const modal = document.getElementById('toolboxModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Tutup modal jika pengguna klik area luar (backdrop)
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('toolboxModal');
+    if (modal && e.target === modal) {
+        closeToolbox();
+    }
+});
+
+function switchToolTab(tabId) {
+    playSfx('click');
+    // Update tombol tab
+    const tabs = document.querySelectorAll('.toolbox-tab');
+    tabs.forEach(tab => {
+        const onClickAttr = tab.getAttribute('onclick') || '';
+        if (onClickAttr.includes(`'${tabId}'`)) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    // Update konten panel
+    const contents = document.querySelectorAll('.tool-content');
+    contents.forEach(content => {
+        if (content.id === `tool-${tabId}`) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
+}
+
+// Mesin Pemanggil AI Khusus Alat (Zero-fail & Berbobot Tinggi)
+async function callToolApi(systemPrompt, userPrompt) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    try {
+        const response = await fetch("https://text.pollinations.ai/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: 'openai',
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            const text = await response.text();
+            if (text && text.trim().length > 0) return text;
+        }
+    } catch (e) {
+        console.warn("Tool API POST fail, mencoba fallback...", e);
+    }
+
+    // Fallback darurat jika ada kendala
+    try {
+        const seed = Math.floor(Math.random() * 999999);
+        const prefix = encodeURIComponent("Jawablah dalam bahasa Indonesia yang sangat rapi dan lengkap: ");
+        const url = `https://text.pollinations.ai/${prefix}${encodeURIComponent(userPrompt)}?model=openai&seed=${seed}`;
+        const res = await fetch(url);
+        if (res.ok) {
+            const text = await res.text();
+            if (text && text.trim().length > 0) return text;
+        }
+    } catch (e) {}
+
+    return "Maaf, koneksi server alat AI sedang padat. Silakan coba klik tombol proses sekali lagi ya!";
+}
+
+// Helper untuk menampilkan hasil alat
+function renderToolResult(outputContainerId, rawText, extraActionHtml = '') {
+    const box = document.getElementById(outputContainerId);
+    if (!box) return;
+
+    const cleaned = cleanAIOutput(rawText);
+    box.style.display = 'block';
+    box.innerHTML = marked.parse(cleaned) + `
+        <div class="tool-action-bar">
+            <button class="tool-mini-btn" onclick="copyToolResultText(this, '${outputContainerId}')"><i class="fa-regular fa-copy"></i> Salin Hasil</button>
+            <button class="tool-mini-btn" onclick="sendToolResultToChat('${outputContainerId}')"><i class="fa-solid fa-paper-plane"></i> Kirim ke Chat</button>
+            ${extraActionHtml}
+        </div>
+    `;
+    renderMath(box);
+    playSfx('receive');
+}
+
+function copyToolResultText(btn, containerId) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+    const textToCopy = box.innerText.replace('Salin Hasil', '').replace('Kirim ke Chat', '').trim();
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
+        setTimeout(() => { btn.innerHTML = oldHtml; }, 2000);
+    });
+}
+
+function sendToolResultToChat(containerId) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+    const text = box.innerText.replace('Salin Hasil', '').replace('Kirim ke Chat', '').trim();
+    closeToolbox();
+
+    const promptInput = document.getElementById('promptInput');
+    promptInput.value = text;
+    promptInput.focus();
+    promptInput.style.height = '24px';
+    promptInput.style.height = Math.min(promptInput.scrollHeight, 120) + 'px';
+}
+
+function generateImageFromTool(promptText) {
+    closeToolbox();
+    const promptInput = document.getElementById('promptInput');
+    promptInput.value = `Buat gambar: ${promptText}`;
+    sendPrompt();
+}
+
+// 1. TOOL PARAPHRASE
+async function runParaphraser() {
+    const text = document.getElementById('paraInput').value.trim();
+    if (!text) {
+        alert("Silakan masukkan teks yang ingin diparafrase terlebih dahulu!");
+        return;
+    }
+    const style = document.getElementById('paraStyle').value;
+    const btn = document.getElementById('btnRunPara');
+    const resultBox = document.getElementById('paraResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-spin"></i> Sedang memparafrase teks secara cerdas & natural...</span>';
+    playSfx('click');
+
+    const systemPrompt = `Kamu adalah ahli bahasa dan editor tulisan profesional Bahasa Indonesia.
+TUGAS: Tulis ulang (parafrase) teks pengguna agar bebas plagiasi, lolos Turnitin, kosa kata bervariasi, dan sangat nyaman dibaca.
+GAYA: ${style.toUpperCase()}.
+ATURAN: Langsung berikan hasil parafrasenya dalam bahasa Indonesia yang rapi. Jangan tampilkan proses berpikir internal.`;
+
+    const userPrompt = `Tolong parafrase teks berikut ini:\n\n"""\n${text}\n"""`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+    renderToolResult('paraResult', res);
+    btn.disabled = false;
+}
+
+// 2. TOOL PPT OUTLINE
+async function runPptGenerator() {
+    const topic = document.getElementById('pptTopic').value.trim();
+    if (!topic) {
+        alert("Silakan masukkan topik presentasi!");
+        return;
+    }
+    const slideCount = document.getElementById('pptSlideCount').value;
+    const audience = document.getElementById('pptAudience').value;
+    const btn = document.getElementById('btnRunPpt');
+    const resultBox = document.getElementById('pptResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-chart-pie fa-spin"></i> Menyusun struktur slide presentasi elegan...</span>';
+    playSfx('click');
+
+    const systemPrompt = `Kamu adalah pakar presentasi dan desain slide profesional (Keynote & PowerPoint).
+TUGAS: Buatkan outline presentasi lengkap sebanyak ${slideCount} slide untuk audiens ${audience}.
+FORMAT TIAP SLIDE:
+- **Slide X: [Judul Slide Menarik]**
+  - **Poin Utama:** (Daftar 2-3 poin ringkas dan bernas)
+  - **Catatan Pembicara (Speaker Notes):** (Apa yang harus diucapkan pembicara saat slide ini tampil)
+ATURAN: Tulis dalam Bahasa Indonesia yang profesional dan siap pakai.`;
+
+    const userPrompt = `Buatkan materi slide presentasi tentang: "${topic}"`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+    renderToolResult('pptResult', res);
+    btn.disabled = false;
+}
+
+// 3. TOOL SURAT RESMI
+async function runLetterGenerator() {
+    const sender = document.getElementById('letterSender').value.trim();
+    const recipient = document.getElementById('letterRecipient').value.trim();
+    const detail = document.getElementById('letterDetail').value.trim();
+    const type = document.getElementById('letterType').value;
+    const btn = document.getElementById('btnRunLetter');
+    const resultBox = document.getElementById('letterResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-envelope-open-text fa-spin"></i> Menyusun surat resmi dengan format baku & santun...</span>';
+    playSfx('click');
+
+    const systemPrompt = `Kamu adalah sekretaris eksekutif dan ahli korespondensi surat resmi di Indonesia.
+TUGAS: Susunlah surat resmi/formal dengan tata bahasa baku (EYD/PUEBI), sangat santun, berbobot, dan berstruktur lengkap (Tempat & Tanggal, Lampiran/Perihal, Salam Pembuka, Isi Terperinci, Salam Penutup, Nama Terang).
+JENIS SURAT: ${type.toUpperCase()}.
+PENGIRIM: ${sender || 'Nama Pengirim'}
+PENERIMA: ${recipient || 'Instansi Terkait'}
+DETAIL/ALASAN: ${detail || 'Keperluan resmi'}`;
+
+    const userPrompt = `Buatkan surat resmi lengkap berdasarkan data di atas.`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+    renderToolResult('letterResult', res);
+    btn.disabled = false;
+}
+
+// 4. TOOL QUIZ GENERATOR
+async function runQuizGenerator() {
+    const input = document.getElementById('quizInput').value.trim();
+    if (!input) {
+        alert("Silakan masukkan materi atau topik pelajaran untuk kuis!");
+        return;
+    }
+    const count = document.getElementById('quizCount').value;
+    const difficulty = document.getElementById('quizDifficulty').value;
+    const btn = document.getElementById('btnRunQuiz');
+    const resultBox = document.getElementById('quizResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-graduation-cap fa-spin"></i> Menyusun soal kuis pilihan ganda + kunci jawaban...</span>';
+    playSfx('click');
+
+    const systemPrompt = `Kamu adalah guru dan pembuat soal ujian profesional.
+TUGAS: Buat ${count} butir soal pilihan ganda (A, B, C, D) dengan tingkat kesulitan ${difficulty}.
+FORMAT PENULISAN:
+1. Tulis soal nomor per nomor secara jelas.
+2. Di bagian bawah setelah semua soal selesai, buat bagian:
+   ### 🔑 KUNCI JAWABAN & PEMBAHASAN
+   Berikan kunci jawaban (A/B/C/D) dan alasan penjelasan logisnya.
+ATURAN: Gunakan Bahasa Indonesia yang baik dan tepat.`;
+
+    const userPrompt = `Materi Kuis:\n"""\n${input}\n"""`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+    renderToolResult('quizResult', res);
+    btn.disabled = false;
+}
+
+// 5. TOOL PROMPT CRAFTER
+async function runPromptCrafter() {
+    const idea = document.getElementById('promptIdea').value.trim();
+    if (!idea) {
+        alert("Silakan ketik ide gambar terlebih dahulu!");
+        return;
+    }
+    const style = document.getElementById('promptStyle').value;
+    const btn = document.getElementById('btnRunPrompt');
+    const resultBox = document.getElementById('promptResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-wand-magic-sparkles fa-spin"></i> Meracik prompt visual sinematik kualitas 8K...</span>';
+    playSfx('click');
+
+    const systemPrompt = `You are a master AI image prompter (Midjourney v6, Stable Diffusion XL, DALL-E 3).
+TASK: Convert the user's idea into an ultra-detailed, high-impact English image prompt.
+STYLE TARGET: ${style.toUpperCase()}.
+INCLUDE: Subject details, lighting (cinematic, volumetric), camera angle, render style (photorealistic, 8k, Unreal Engine 5, Octane render), color grading.
+OUTPUT FORMAT:
+Provide:
+1. The English master prompt inside a code block.
+2. A short Indonesian explanation of what visual elements were added.`;
+
+    const userPrompt = `Idea: "${idea}"`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+
+    // Ekstrak prompt bahasa Inggris untuk tombol 'Buat Gambar Langsung'
+    const codeMatch = res.match(/```(?:text)?\s*([\s\S]*?)```/);
+    const extractedPrompt = codeMatch ? codeMatch[1].trim() : idea;
+    const safeEscaped = extractedPrompt.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    const extraBtn = `<button class="tool-mini-btn primary" onclick="generateImageFromTool('${safeEscaped}')"><i class="fa-solid fa-image"></i> 🚀 Buat Gambar Langsung</button>`;
+    renderToolResult('promptResult', res, extraBtn);
+    btn.disabled = false;
+}
+
+// 6. TOOL CODE FIXER
+async function runCodeFixer() {
+    const code = document.getElementById('codeInput').value.trim();
+    if (!code) {
+        alert("Silakan tempel kode koding yang ingin diperiksa!");
+        return;
+    }
+    const lang = document.getElementById('codeLang').value;
+    const errorMsg = document.getElementById('codeErrorMsg').value.trim();
+    const btn = document.getElementById('btnRunCode');
+    const resultBox = document.getElementById('codeResult');
+
+    btn.disabled = true;
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-bug fa-spin"></i> Menganalisis error sintaks & logika kode...</span>';
+    playSfx('click');
+
+    const systemPrompt = `Kamu adalah Senior Software Engineer dan Debugging Specialist.
+TUGAS: Analisis kode pengguna, temukan bug/error sintaks/logika, dan berikan kode yang sudah diperbaiki 100%.
+FORMAT JAWABAN:
+1. **🔍 Penyebab Error & Masalah:** (Penjelasan singkat dan jelas dalam bahasa Indonesia)
+2. **✅ Kode yang Sudah Diperbaiki:** (Tampilkan kode lengkap di dalam codeblock markdown dengan penanda komentar penjelasan)
+3. **💡 Saran Optimasi:** (Tips singkat agar kode lebih aman dan cepat)
+BAHASA: ${lang.toUpperCase()}`;
+
+    const userPrompt = `Kode Bermasalah:\n\`\`\`\n${code}\n\`\`\`\n\nPesan Error (jika ada): ${errorMsg || 'Tidak ada pesan error spesifik'}`;
+    const res = await callToolApi(systemPrompt, userPrompt);
+    renderToolResult('codeResult', res);
+    btn.disabled = false;
+}
+
