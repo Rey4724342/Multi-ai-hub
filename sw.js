@@ -1,44 +1,52 @@
-// Rey Multi AI Hub - Service Worker
-const CACHE_NAME = 'reymulti-cache-v1';
+// Rey Multi AI Hub - Service Worker Turbo (Auto-Update & Network First)
+const CACHE_NAME = 'reymulti-cache-v3';
 const ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './script.js',
+  './style.css?v=3.0',
+  './script.js?v=3.0',
   './1791994468675.jpg',
   './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log('Menghapus cache lama:', key);
+            return caches.delete(key);
+          }
+        })
       );
     })
   );
   self.clients.claim();
 });
 
+// Network First: Coba ambil versi terbaru dari server dulu agar selalu fresh
 self.addEventListener('fetch', (event) => {
-  // Hanya cache aset lokal GET, jangan cache request AI atau API eksternal
   if (event.request.method === 'GET' && event.request.url.startsWith(self.location.origin)) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || fetch(event.request).then((networkResponse) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
-          });
-        });
-      }).catch(() => caches.match('./index.html'))
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((res) => res || caches.match('./index.html'));
+        })
     );
   }
 });
