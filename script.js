@@ -35,7 +35,7 @@ if (window.visualViewport) {
 // REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP) DENGAN AUTO-UPDATE
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=3.0')
+        navigator.serviceWorker.register('sw.js?v=3.5')
             .then((reg) => {
                 if (reg) reg.update();
             })
@@ -813,22 +813,36 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
     targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menyusun jawaban rapi...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
 
-    // Timeout 25 detik
+    // Timeout 45 detik agar stabil di HP & jaringan seluler
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     let accumulatedText = "";
-    const targetModel = 'openai';
 
-    // AMBIL MULTI-TURN CONTEXT DARI SESI AKTIF (MEMORI PERCAKAPAN)
+    // AMBIL MULTI-TURN CONTEXT DARI SESI AKTIF SECARA EFISIEN & AMAN
     const currSession = chatSessions[activeSessionId];
     let historyMessages = [];
     if (currSession && currSession.messages && currSession.messages.length > 0) {
-        // Ambil 6 pesan terakhir agar AI mengingat topik sebelumnya
-        historyMessages = currSession.messages.slice(-6).map(m => ({
-            role: m.role,
-            content: m.content
-        }));
+        // Ambil maksimal 4 pesan terakhir (2 putaran percakapan) agar cepat & hemat token
+        const recent = currSession.messages.slice(-4);
+        for (const m of recent) {
+            let clean = m.content || "";
+            // Jangan kirim raw base64 data gambar ke API teks
+            clean = clean.replace(/<img[^>]*>/gi, '[Pengguna mengunggah gambar]');
+            clean = clean.replace(/<[^>]+>/g, ''); // bersihkan tag HTML
+            // Pangkas respon asisten yang terlalu panjang agar inferensi tetap cepat
+            if (m.role === 'assistant' && clean.length > 350) {
+                clean = clean.substring(0, 350) + '...';
+            } else if (m.role === 'user' && clean.length > 400) {
+                clean = clean.substring(0, 400);
+            }
+            if (clean.trim()) {
+                historyMessages.push({
+                    role: m.role === 'assistant' ? 'assistant' : 'user',
+                    content: clean.trim()
+                });
+            }
+        }
     }
 
     const messagesPayload = [
@@ -842,7 +856,6 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: targetModel,
                 messages: messagesPayload,
                 temperature: 0.7,
                 stream: true
@@ -872,7 +885,14 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
                     if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
                             const parsed = JSON.parse(trimmed.replace('data: ', ''));
-                            const content = parsed.choices?.[0]?.delta?.content || "";
+                            const delta = parsed.choices?.[0]?.delta;
+                            const content = delta?.content || "";
+
+                            // Tampilkan status penalaran jika model sedang berpikir
+                            if (delta?.reasoning && !hasFirstToken) {
+                                streamBox.innerHTML = '<span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menalar konteks...</span>';
+                            }
+
                             if (content) {
                                 if (!hasFirstToken) {
                                     hasFirstToken = true;
@@ -923,13 +943,12 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         console.log("Beralih ke mesin fallback berpresisi tinggi...", e);
     }
 
-    // JALUR FALLBACK POST BERPRESISI TINGGI
+    // JALUR FALLBACK POST BERPRESISI TINGGI (TANPA PAYWALL MODEL)
     try {
         const fallbackRes = await fetch("https://text.pollinations.ai/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: targetModel,
                 messages: messagesPayload,
                 temperature: 0.7
             })
@@ -955,11 +974,11 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         console.log("Fallback POST gagal, mencoba jalur cepat...", e);
     }
 
-    // JALUR DARURAT TERAKHIR (GET)
+    // JALUR DARURAT TERAKHIR (GET TANPA PAYWALL MODEL)
     try {
         const randomSeed = Math.floor(Math.random() * 999999);
         const indoPrefix = encodeURIComponent("Jawablah dengan rapi, jelas, dan terstruktur dalam bahasa Indonesia yang baik: ");
-        const emergencyUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=${targetModel}&seed=${randomSeed}`;
+        const emergencyUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?seed=${randomSeed}`;
         
         const emergencyRes = await fetch(emergencyUrl);
         if (emergencyRes.ok) {
@@ -967,6 +986,13 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
             if (text && text.trim().length > 0) {
                 playTurboTypewriter(text, targetContainer, chatHistory, () => {
                     enhanceCodeBlocks(targetContainer);
+                    if (currSession) {
+                        currSession.messages.push({ role: 'user', content: displayUserMessage || promptText });
+                        currSession.messages.push({ role: 'assistant', content: cleanAIOutput(text) });
+                        currSession.updatedAt = Date.now();
+                        saveSessionsToStorage();
+                        renderSessionList();
+                    }
                 });
                 return;
             }
@@ -1138,14 +1164,13 @@ function switchToolTab(tabId) {
 // Mesin Pemanggil AI Khusus Alat (Zero-fail & Berbobot Tinggi)
 async function callToolApi(systemPrompt, userPrompt) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
 
     try {
         const response = await fetch("https://text.pollinations.ai/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: 'openai',
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userPrompt }
@@ -1168,7 +1193,7 @@ async function callToolApi(systemPrompt, userPrompt) {
     try {
         const seed = Math.floor(Math.random() * 999999);
         const prefix = encodeURIComponent("Jawablah dalam bahasa Indonesia yang sangat rapi dan lengkap: ");
-        const url = `https://text.pollinations.ai/${prefix}${encodeURIComponent(userPrompt)}?model=openai&seed=${seed}`;
+        const url = `https://text.pollinations.ai/${prefix}${encodeURIComponent(userPrompt)}?seed=${seed}`;
         const res = await fetch(url);
         if (res.ok) {
             const text = await res.text();
