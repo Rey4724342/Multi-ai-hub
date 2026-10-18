@@ -18,10 +18,28 @@ let chatSessions = {};
 let activeSessionId = null;
 let currentPreviewCode = "";
 
-// REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP)
+// ATUR TINGGI LAYAR DINAMIS AGAR TIDAK TERPOTONG NAVIGASI HP (100% RESPONSIF)
+function adjustAppHeight() {
+    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const vh = height * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+adjustAppHeight();
+window.addEventListener('resize', adjustAppHeight);
+window.addEventListener('orientationchange', adjustAppHeight);
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', adjustAppHeight);
+    window.visualViewport.addEventListener('scroll', adjustAppHeight);
+}
+
+// REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP) DENGAN AUTO-UPDATE
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW fail:', err));
+        navigator.serviceWorker.register('sw.js?v=3.0')
+            .then((reg) => {
+                if (reg) reg.update();
+            })
+            .catch(err => console.log('SW fail:', err));
     });
 }
 
