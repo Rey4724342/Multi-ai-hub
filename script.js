@@ -636,11 +636,22 @@ function renderMath(element) {
 // PEMBERSIH KONTEN: HILANGKAN PROSES PIKIR INTERNAL & TAG FORMAT ANEH
 function cleanAIOutput(text) {
     if (!text) return "";
-    return text
-        .replace(/<think>[\s\S]*?<\/think>/gi, '')
-        .replace(/Thinking Process:[\s\S]*?(?=\n\n|$)/gi, '')
-        .replace(/User:\s*"[^"]*"\s*Indonesian\.?\s*Response:?\s*/gi, '')
+    let cleaned = text
+        // Hilangkan tag think/reasoning baik yang tertutup maupun yang masih terbuka saat streaming
+        .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '')
+        .replace(/<\/?(?:thought|thinking|reasoning|reflection)[\s\S]*?(?:<\/(?:thought|thinking|reasoning|reflection)>|$)/gi, '')
+        .replace(/^Thinking Process:[\s\S]*?(?=\n\n|$)/gmi, '')
+        .replace(/^Thought:[\s\S]*?(?=\n\n|$)/gmi, '')
+        .replace(/User:\s*"[^"]*"\s*(?:Indonesian\.?\s*)?(?:Response:?)?\s*/gi, '')
+        // Hilangkan pesan batasan free limit jika terjadi di tengah jalan
+        .replace(/Free limit reached:[\s\S]*?then try again\.?/gi, '')
+        // Bersihkan simbol rusak (replacement character) & tanda tanya aneh pada satuan/angka
+        .replace(/\uFFFD/g, '')
+        .replace(/(\d+)\?([a-zA-Z]+)/g, '$1 $2')
+        .replace(/\?([a-zA-Z]+)/g, ' $1')
+        .replace(/([a-zA-Z0-9])\?([a-zA-Z0-9])/g, '$1-$2')
         .trim();
+    return cleaned;
 }
 
 // MESIN KETIK KILAT TURBO (SUPER FAST TYPEWRITER ENGINE - RAPI & TANPA LAG)
@@ -648,8 +659,8 @@ function playTurboTypewriter(fullText, targetContainer, chatHistory, callback) {
     const cleanedText = cleanAIOutput(fullText);
     let cursor = 0;
     const total = cleanedText.length;
-    // Lompatan karakter adaptif: selesai kilat dalam 0.6 - 0.8 detik
-    const step = Math.max(12, Math.ceil(total / 24));
+    // Lompatan karakter adaptif: selesai kilat dalam 0.4 - 0.7 detik
+    const step = Math.max(14, Math.ceil(total / 20));
     
     targetContainer.innerHTML = `<div class="live-typing-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"></div>`;
     const box = targetContainer.querySelector('.live-typing-box');
@@ -668,7 +679,7 @@ function playTurboTypewriter(fullText, targetContainer, chatHistory, callback) {
             box.textContent = cleanedText.substring(0, cursor) + " ▌";
             if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
         }
-    }, 12); // Render super cepat 60 FPS
+    }, 16);
 }
 
 // MESIN STREAMING & RESPON KILAT REAL-TIME (TULISAN RAPI & BERSIH)
@@ -688,56 +699,60 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
     // BANGUN SYSTEM PROMPT DINAMIS BERDASARKAN PERSONA GAYA BICARA
     let personaInstruction = "";
     if (currentPersona === 'gaul') {
-        personaInstruction = `GAYA BICARA GAUL & SANTAI:
-- Gunakan bahasa santai dan gaul khas anak muda Indonesia (lo-gue, asik, humoris, tidak kaku).
-- Tetap berikan informasi yang akurat, tepat, dan solutif.`;
+        personaInstruction = `GAYA BICARA: Gaul, asik, santai, dan bersahabat ala anak muda Indonesia (lo-gue, tidak kaku, humoris jika pas). Tetap cerdas dan solutif dalam memberi info.`;
     } else if (currentPersona === 'formal') {
-        personaInstruction = `GAYA BICARA FORMAL & AKADEMIK:
-- Gunakan Bahasa Indonesia baku (EYD), sangat profesional, ilmiah, dan sopan.
-- Cocok untuk menyusun skripsi, karya ilmiah, makalah, dan laporan resmi berbobot tinggi.`;
+        personaInstruction = `GAYA BICARA: Formal, akademik, ilmiah, dan baku sesuai EYD/PUEBI. Sangat cocok untuk tugas kuliah, skripsi, makalah, dan laporan resmi berbobot tinggi.`;
     } else if (currentPersona === 'tutor') {
-        personaInstruction = `GAYA BICARA GURU / TUTOR PR & MATEMATIKA:
-- Kamu adalah guru privat terbaik yang sabar dan detail dalam mengajar.
-- Untuk soal matematika, fisika, dan kimia: WAJIB tulis rumus lengkap dalam format KaTeX ($ ... $ atau $$ ... $$) dan jabarkan langkah pengerjaannya nomor per nomor hingga hasil akhir.`;
+        personaInstruction = `GAYA BICARA: Guru/Tutor privat yang sabar, runtut, dan detail. Jelaskan konsep langkah demi langkah (step-by-step). Untuk matematika/fisika/kimia, jelaskan dari rumus dasar, masukkan angka, hingga hasil akhir.`;
     } else if (currentPersona === 'curhat') {
-        personaInstruction = `GAYA BICARA SAHABAT CURHAT:
-- Bersikaplah sangat hangat, empati, ramah, dan menjadi pendengar yang menenangkan.
-- Berikan motivasi, saran positif, dan dukungan emosional tanpa menghakimi.`;
+        personaInstruction = `GAYA BICARA: Sahabat curhat yang hangat, ramah, penuh empati, dan pendengar yang baik. Berikan motivasi, pandangan positif, dan solusi menenangkan tanpa menghakimi.`;
     } else {
-        personaInstruction = `GAYA BICARA STANDAR:
-- Berikan jawaban yang cerdas, teliti, terstruktur rapi, dan mudah dipahami pengguna.`;
+        personaInstruction = `GAYA BICARA: Standar profesional, ramah, cerdas, jelas, dan sangat mudah dipahami.`;
+    }
+
+    // SPESIALISASI PROMPT BERDASARKAN PILIHAN MODEL
+    let modelSpecialization = "";
+    if (selectedModel === 'qwen-coder') {
+        modelSpecialization = "FOKUS SPESIALIS KODING: Berikan kode yang efisien, bersih, berikan penjelasan baris per baris, dan tangani error handling dengan baik.";
+    } else if (selectedModel === 'deepseek') {
+        modelSpecialization = "FOKUS SPESIALIS ANALITIK & SAINS: Lakukan penalaran logika mendalam, pemecahan masalah sistematis, dan pembuktian langkah terstruktur.";
+    } else if (selectedModel === 'claude') {
+        modelSpecialization = "FOKUS SPESIALIS KEPENULISAN: Gunakan penulisan narasi berkualitas tinggi, bahasa yang elegan, dan kosa kata yang kaya.";
     }
 
     const systemPrompt = `Kamu adalah asisten AI resmi dari Rey Multi AI Hub (karya Rey472).
 ${personaInstruction}
+${modelSpecialization}
 
-PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & PRESISI):
-1. SUSUNAN RAPI & STRUKTUR INDAH: Tulis jawaban dengan paragraf rapi dan pemisah baris yang cukup. Gunakan penomoran (1, 2, 3) atau daftar poin (-) jika menjabarkan informasi panjang.
-2. LANGSUNG KE INTI JAWABAN: Jangan pernah menuliskan proses berpikir internal (seperti "Thinking Process:", "User:", "Response:", atau tag <think>). Berikan langsung jawaban yang bersih dan tuntas.
-3. AKURASI 100% TANPA KESALAHAN: Fakta, nama, tanggal, dan rumus matematika harus 100% presisi dan terverifikasi.
-4. SOAL & MATEMATIKA: Tulis rumus dan langkah penyelesaian secara runtut dan teratur hingga hasil akhir.
-5. BAHASA INDONESIA YANG BAIK: Gunakan Bahasa Indonesia yang nyaman dibaca.`;
+PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
+1. BAHASA INDONESIA NATURAL & TEPAT: Jawablah 100% dalam Bahasa Indonesia yang alami, lazim, dan enak dibaca. JANGAN gunakan terjemahan mesin yang kaku, aneh, atau istilah asing yang diterjemahkan harfiah secara janggal.
+2. STRUKTUR RAPI & JELAS: Gunakan paragraf-paragraf yang tidak terlalu panjang, gunakan penomoran (1, 2, 3) atau poin (-) untuk menjabarkan poin penting agar pembaca mudah memahami.
+3. LANGSUNG KE JAWABAN: Dilarang keras menampilkan proses berpikir internal, tag <think>, atau teks percakapan sistem. Berikan langsung jawaban yang bersih dan tuntas.
+4. RUMUS & MATEMATIKA: Tulis rumus matematika dengan rapi menggunakan format KaTeX ($ ... $ untuk inline atau $$ ... $$ untuk blok baris). Hindari simbol unicode aneh yang bisa rusak.
+5. AKURASI & LOGIKA: Berikan informasi yang valid, terpercaya, dan masuk akal. Jangan mengarang hal yang tidak diketahui.`;
 
-    targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-bolt fa-fade"></i> Membaca dan menyiapkan jawaban...</span></div>`;
+    targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menyusun jawaban rapi...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
 
-    // Batas waktu timeout 8.5 detik agar koneksi HP tetap lancar
+    // Timeout 25 detik (memberi waktu model reasoning merumuskan jawaban)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8500);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     let accumulatedText = "";
+    // Pollinations classic tier tanpa 404/rate limit menggunakan engine 'openai'
+    const targetModel = 'openai';
 
     try {
         const response = await fetch("https://text.pollinations.ai/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                model: selectedModel || 'openai',
+                model: targetModel,
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: fullPrompt }
                 ],
-                temperature: 0.2, // Nilai rendah (0.2) agar fokus pada fakta presisi & tidak melantur
+                temperature: 0.7, // Suhu 0.7 menghasilkan bahasa Indonesia yang luwes & alami
                 stream: true
             }),
             signal: controller.signal
@@ -750,20 +765,22 @@ PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & PRESISI):
             const decoder = new TextDecoder("utf-8");
             let renderPending = false;
             let hasFirstToken = false;
+            let sseBuffer = "";
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
+                sseBuffer += decoder.decode(value, { stream: true });
+                const lines = sseBuffer.split('\n');
+                sseBuffer = lines.pop(); // Pertahankan baris yang belum selesai agar token tidak terpotong
 
                 for (let line of lines) {
                     const trimmed = line.trim();
                     if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
                             const parsed = JSON.parse(trimmed.replace('data: ', ''));
-                            // HANYA ambil content resmi, abaikan internal reasoning agar teks tidak kotor
+                            // HANYA ambil content jawaban resmi, abaikan internal reasoning agar teks tetap bersih
                             const content = parsed.choices?.[0]?.delta?.content || "";
                             if (content) {
                                 if (!hasFirstToken) {
@@ -797,18 +814,44 @@ PEDOMAN FORMAT PENULISAN WAJIB (RAPI, ELEGAN & PRESISI):
             }
         }
     } catch (e) {
-        console.log("Beralih ke mesin turbo kilat fallback...", e);
+        console.log("Beralih ke mesin fallback berpresisi tinggi...", e);
     }
 
-    // JALUR KILAT TURBO ENGINE (JIKA STREAMING TERPUTUS)
+    // JALUR FALLBACK POST BERPRESISI TINGGI DENGAN SYSTEM PROMPT LENGKAP
+    try {
+        const fallbackRes = await fetch("https://text.pollinations.ai/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: targetModel,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: fullPrompt }
+                ],
+                temperature: 0.7
+            })
+        });
+
+        if (fallbackRes.ok) {
+            const fullText = await fallbackRes.text();
+            if (fullText && fullText.trim().length > 0) {
+                playTurboTypewriter(fullText, targetContainer, chatHistory);
+                return;
+            }
+        }
+    } catch (e) {
+        console.log("Fallback POST gagal, mencoba jalur cepat...", e);
+    }
+
+    // JALUR DARURAT TERAKHIR (GET)
     try {
         const randomSeed = Math.floor(Math.random() * 999999);
-        const indoPrefix = encodeURIComponent("Jawablah dengan rapi, jelas, dan tepat dalam bahasa Indonesia: ");
-        const fallbackUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=${selectedModel || 'openai'}&seed=${randomSeed}`;
+        const indoPrefix = encodeURIComponent("Jawablah dengan rapi, jelas, dan terstruktur dalam bahasa Indonesia yang baik: ");
+        const emergencyUrl = `https://text.pollinations.ai/${indoPrefix}${encodeURIComponent(fullPrompt)}?model=${targetModel}&seed=${randomSeed}`;
         
-        const fallbackRes = await fetch(fallbackUrl);
-        if (fallbackRes.ok) {
-            const text = await fallbackRes.text();
+        const emergencyRes = await fetch(emergencyUrl);
+        if (emergencyRes.ok) {
+            const text = await emergencyRes.text();
             if (text && text.trim().length > 0) {
                 playTurboTypewriter(text, targetContainer, chatHistory);
                 return;
