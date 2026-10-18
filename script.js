@@ -7,13 +7,16 @@ let isImageGenMode = false;
 let isProcessingOCR = false;
 let tesseractWorker = null;
 
-// VARIABEL FITUR BARU (PWA, SUARA, VOICE, PERSONA)
+// VARIABEL FITUR (PWA, SUARA, VOICE, PERSONA, SESI & PREVIEW)
 let isSfxEnabled = localStorage.getItem('rey_sfx') !== 'false';
 let speechRecognizer = null;
 let isVoiceRecording = false;
 let pwaDeferredPrompt = null;
 let currentPersona = 'standard';
 let audioCtx = null;
+let chatSessions = {};
+let activeSessionId = null;
+let currentPreviewCode = "";
 
 // REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP)
 if ('serviceWorker' in navigator) {
@@ -45,6 +48,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Jalankan animasi partikel wallpaper interaktif
     initBackgroundParticles();
+
+    // Muat riwayat sesi obrolan (seperti ChatGPT)
+    loadSessionsFromStorage();
 
     const keyInput = document.getElementById('keyInput');
     if (keyInput) {
@@ -173,6 +179,8 @@ function handleLogin() {
             lockSection.style.display = 'none';
             mainSection.style.display = 'flex';
             checkVipStatus();
+            renderSessionList();
+            renderCurrentSessionMessages();
         }, 350);
     } else {
         playSfx('click');
@@ -256,7 +264,32 @@ async function handleFileSelected(event) {
     attachedFileName = file.name;
     const reader = new FileReader();
 
-    if (file.type.startsWith('image/')) {
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.disabled = true;
+        showAttachmentPreview(`⚡ <i class="fa-solid fa-file-pdf fa-spin"></i> Membaca isi dokumen PDF...`);
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullPdfText = "";
+            const maxPages = Math.min(pdf.numPages, 30);
+            for (let i = 1; i <= maxPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullPdfText += `[Halaman ${i}]\n${pageText}\n\n`;
+            }
+            attachedFileContent = { type: 'pdf', data: fullPdfText, pageCount: pdf.numPages };
+            extractedImageText = "";
+            showAttachmentPreview(`📄 PDF Terbaca (${pdf.numPages} Hal): <strong>${file.name}</strong>`);
+        } catch (err) {
+            console.error("PDF Read Error:", err);
+            attachedFileContent = { type: 'text', data: "Dokumen PDF: " + file.name };
+            showAttachmentPreview(`📄 Dokumen PDF: ${file.name}`);
+        } finally {
+            sendBtn.disabled = false;
+        }
+    } else if (file.type.startsWith('image/')) {
         const sendBtn = document.getElementById('sendBtn');
         sendBtn.disabled = true;
         isProcessingOCR = true;
@@ -395,11 +428,20 @@ function usePreset(prefix) {
 
 function clearChat() {
     playSfx('click');
-    document.getElementById('chatHistory').innerHTML = `
-        <div class="chat-bubble ai">
-            <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
-            <div class="bubble-content"><strong>Rey Multi AI Hub</strong><br>Riwayat obrolan telah dibersihkan.</div>
-        </div>`;
+    const curr = chatSessions[activeSessionId];
+    if (curr) {
+        curr.messages = [];
+        curr.title = 'Obrolan Baru';
+        saveSessionsToStorage();
+        renderSessionList();
+        renderCurrentSessionMessages();
+    } else {
+        document.getElementById('chatHistory').innerHTML = `
+            <div class="chat-bubble ai">
+                <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
+                <div class="bubble-content"><strong>Rey Multi AI Hub</strong><br>Riwayat obrolan telah dibersihkan.</div>
+            </div>`;
+    }
     clearAttachment();
 }
 
@@ -683,17 +725,19 @@ function playTurboTypewriter(fullText, targetContainer, chatHistory, callback) {
 }
 
 // MESIN STREAMING & RESPON KILAT REAL-TIME (TULISAN RAPI & BERSIH)
-async function streamAIResponse(promptText, selectedModel, targetContainer) {
+async function streamAIResponse(promptText, selectedModel, targetContainer, displayUserMessage) {
     const chatHistory = document.getElementById('chatHistory');
     let fullPrompt = promptText;
     
-    // Format prompt rapi jika pengguna mengirim foto
+    // Format prompt rapi jika pengguna mengirim foto atau PDF
     if (attachedFileContent && attachedFileContent.type === 'image') {
         if (extractedImageText) {
             fullPrompt = `Teks hasil pemindaian foto/kamera:\n"""\n${extractedImageText}\n"""\n\nPerintah Pengguna: ${promptText || 'Tolong jawab, selesaikan, atau jelaskan isi teks/soal pada foto tersebut secara lengkap dan tepat dalam bahasa Indonesia.'}`;
         } else {
             fullPrompt = `Pengguna mengunggah gambar. Pertanyaan: ${promptText || 'Tolong jelaskan isi gambar ini.'}`;
         }
+    } else if (attachedFileContent && attachedFileContent.type === 'pdf') {
+        fullPrompt = `Dokumen PDF Terlampir "${attachedFileName}" (${attachedFileContent.pageCount} halaman):\n"""\n${attachedFileContent.data}\n"""\n\nInstruksi Pengguna: ${promptText || 'Tolong rangkum dan jelaskan seluruh poin penting dalam dokumen PDF ini secara terstruktur dalam bahasa Indonesia.'}`;
     }
 
     // BANGUN SYSTEM PROMPT DINAMIS BERDASARKAN PERSONA GAYA BICARA
@@ -718,11 +762,28 @@ async function streamAIResponse(promptText, selectedModel, targetContainer) {
         modelSpecialization = "FOKUS SPESIALIS ANALITIK & SAINS: Lakukan penalaran logika mendalam, pemecahan masalah sistematis, dan pembuktian langkah terstruktur.";
     } else if (selectedModel === 'claude') {
         modelSpecialization = "FOKUS SPESIALIS KEPENULISAN: Gunakan penulisan narasi berkualitas tinggi, bahasa yang elegan, dan kosa kata yang kaya.";
+    } else if (selectedModel === 'searchgpt') {
+        modelSpecialization = "FOKUS PENCARIAN WEB INTERNET: Bertindaklah sebagai SearchGPT/Perplexity. Berikan informasi mutakhir, faktual, rangkum topik secara mendalam dan terstruktur dengan poin-poin jelas.";
+    }
+
+    // PREFERENSI & ATURAN KUSTOM PENGGUNA (CUSTOM INSTRUCTIONS)
+    const customUserName = localStorage.getItem('rey_user_name') || '';
+    const customUserRole = localStorage.getItem('rey_user_role') || '';
+    const customUserRules = localStorage.getItem('rey_user_rules') || '';
+    let customUserContext = "";
+    if (customUserName || customUserRole || customUserRules) {
+        customUserContext = `
+PROFIL & PREFERENSI KHUSUS PENGGUNA:
+- Nama Pengguna: ${customUserName || 'Pengguna'}
+- Peran/Status: ${customUserRole || 'Umum'}
+- Aturan Khusus Cara Menjawab: ${customUserRules || 'Jawab dengan ramah dan akurat'}
+(PENTING: Sesuaikan nada bicara dan relevansi jawaban dengan profil pengguna di atas!)`;
     }
 
     const systemPrompt = `Kamu adalah asisten AI resmi dari Rey Multi AI Hub (karya Rey472).
 ${personaInstruction}
 ${modelSpecialization}
+${customUserContext}
 
 PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
 1. BAHASA INDONESIA NATURAL & TEPAT: Jawablah 100% dalam Bahasa Indonesia yang alami, lazim, dan enak dibaca. JANGAN gunakan terjemahan mesin yang kaku, aneh, atau istilah asing yang diterjemahkan harfiah secara janggal.
@@ -734,13 +795,29 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
     targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menyusun jawaban rapi...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
 
-    // Timeout 25 detik (memberi waktu model reasoning merumuskan jawaban)
+    // Timeout 25 detik
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     let accumulatedText = "";
-    // Pollinations classic tier tanpa 404/rate limit menggunakan engine 'openai'
     const targetModel = 'openai';
+
+    // AMBIL MULTI-TURN CONTEXT DARI SESI AKTIF (MEMORI PERCAKAPAN)
+    const currSession = chatSessions[activeSessionId];
+    let historyMessages = [];
+    if (currSession && currSession.messages && currSession.messages.length > 0) {
+        // Ambil 6 pesan terakhir agar AI mengingat topik sebelumnya
+        historyMessages = currSession.messages.slice(-6).map(m => ({
+            role: m.role,
+            content: m.content
+        }));
+    }
+
+    const messagesPayload = [
+        { role: "system", content: systemPrompt },
+        ...historyMessages,
+        { role: "user", content: fullPrompt }
+    ];
 
     try {
         const response = await fetch("https://text.pollinations.ai/", {
@@ -748,11 +825,8 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: targetModel,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: fullPrompt }
-                ],
-                temperature: 0.7, // Suhu 0.7 menghasilkan bahasa Indonesia yang luwes & alami
+                messages: messagesPayload,
+                temperature: 0.7,
                 stream: true
             }),
             signal: controller.signal
@@ -773,14 +847,13 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
 
                 sseBuffer += decoder.decode(value, { stream: true });
                 const lines = sseBuffer.split('\n');
-                sseBuffer = lines.pop(); // Pertahankan baris yang belum selesai agar token tidak terpotong
+                sseBuffer = lines.pop();
 
                 for (let line of lines) {
                     const trimmed = line.trim();
                     if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
                         try {
                             const parsed = JSON.parse(trimmed.replace('data: ', ''));
-                            // HANYA ambil content jawaban resmi, abaikan internal reasoning agar teks tetap bersih
                             const content = parsed.choices?.[0]?.delta?.content || "";
                             if (content) {
                                 if (!hasFirstToken) {
@@ -808,8 +881,23 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
             if (cleanFinal !== "") {
                 targetContainer.innerHTML = marked.parse(cleanFinal) + getActionButtonsHTML();
                 renderMath(targetContainer);
+                enhanceCodeBlocks(targetContainer);
                 playSfx('receive');
                 if (chatHistory) chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                // Simpan ke memori sesi obrolan
+                if (currSession) {
+                    currSession.messages.push({ role: 'user', content: displayUserMessage || promptText });
+                    currSession.messages.push({ role: 'assistant', content: cleanFinal });
+                    currSession.updatedAt = Date.now();
+                    if ((currSession.title === 'Obrolan Baru' || !currSession.title) && promptText) {
+                        currSession.title = promptText.trim().substring(0, 24) + (promptText.length > 24 ? '...' : '');
+                    }
+                    saveSessionsToStorage();
+                    renderSessionList();
+                    const titleElem = document.getElementById('headerChatTitle');
+                    if (titleElem) titleElem.innerText = currSession.title;
+                }
                 return;
             }
         }
@@ -817,17 +905,14 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         console.log("Beralih ke mesin fallback berpresisi tinggi...", e);
     }
 
-    // JALUR FALLBACK POST BERPRESISI TINGGI DENGAN SYSTEM PROMPT LENGKAP
+    // JALUR FALLBACK POST BERPRESISI TINGGI
     try {
         const fallbackRes = await fetch("https://text.pollinations.ai/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: targetModel,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: fullPrompt }
-                ],
+                messages: messagesPayload,
                 temperature: 0.7
             })
         });
@@ -835,7 +920,16 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         if (fallbackRes.ok) {
             const fullText = await fallbackRes.text();
             if (fullText && fullText.trim().length > 0) {
-                playTurboTypewriter(fullText, targetContainer, chatHistory);
+                playTurboTypewriter(fullText, targetContainer, chatHistory, () => {
+                    enhanceCodeBlocks(targetContainer);
+                    if (currSession) {
+                        currSession.messages.push({ role: 'user', content: displayUserMessage || promptText });
+                        currSession.messages.push({ role: 'assistant', content: cleanAIOutput(fullText) });
+                        currSession.updatedAt = Date.now();
+                        saveSessionsToStorage();
+                        renderSessionList();
+                    }
+                });
                 return;
             }
         }
@@ -853,7 +947,9 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         if (emergencyRes.ok) {
             const text = await emergencyRes.text();
             if (text && text.trim().length > 0) {
-                playTurboTypewriter(text, targetContainer, chatHistory);
+                playTurboTypewriter(text, targetContainer, chatHistory, () => {
+                    enhanceCodeBlocks(targetContainer);
+                });
                 return;
             }
         }
@@ -879,7 +975,9 @@ async function sendPrompt() {
 
     let displayUserMessage = escapeHtml(userPrompt);
     if (attachedFileContent && attachedFileContent.type === 'image') {
-        displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 180px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Artikan teks');
+        displayUserMessage = `<img src="${attachedFileContent.data}" style="max-width: 180px; display: block; border-radius: 8px; margin-bottom: 6px;" /><br>` + (displayUserMessage || 'Artikan teks foto');
+    } else if (attachedFileContent && attachedFileContent.type === 'pdf') {
+        displayUserMessage = `📄 <strong>${escapeHtml(attachedFileName)}</strong> (${attachedFileContent.pageCount} halaman)<br>` + (displayUserMessage || 'Rangkum isi PDF');
     }
 
     promptInput.value = '';
@@ -907,8 +1005,17 @@ async function sendPrompt() {
         targetContainer.innerHTML = marked.parse(finalOutput);
         playSfx('receive');
         isImageGenMode = false;
+        
+        const currSession = chatSessions[activeSessionId];
+        if (currSession) {
+            currSession.messages.push({ role: 'user', content: displayUserMessage });
+            currSession.messages.push({ role: 'assistant', content: finalOutput });
+            currSession.updatedAt = Date.now();
+            saveSessionsToStorage();
+            renderSessionList();
+        }
     } else {
-        await streamAIResponse(userPrompt, model, targetContainer);
+        await streamAIResponse(userPrompt, model, targetContainer, displayUserMessage);
     }
 
     clearAttachment();
@@ -945,7 +1052,8 @@ function downloadChatHistory() {
 }
 
 function escapeHtml(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    if (!text) return "";
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // ==========================================
@@ -974,6 +1082,14 @@ window.addEventListener('click', (e) => {
     const modal = document.getElementById('toolboxModal');
     if (modal && e.target === modal) {
         closeToolbox();
+    }
+    const codeModal = document.getElementById('codePreviewModal');
+    if (codeModal && e.target === codeModal) {
+        closeCodePreview();
+    }
+    const customModal = document.getElementById('customSettingsModal');
+    if (customModal && e.target === customModal) {
+        closeCustomSettings();
     }
 });
 
@@ -1279,4 +1395,376 @@ BAHASA: ${lang.toUpperCase()}`;
     renderToolResult('codeResult', res);
     btn.disabled = false;
 }
+
+// ==========================================
+// 1. MANAJEMEN SESI & RIWAYAT OBROLAN (CHATGPT STYLE)
+// ==========================================
+
+function loadSessionsFromStorage() {
+    try {
+        const saved = localStorage.getItem('rey_chat_sessions');
+        if (saved) {
+            chatSessions = JSON.parse(saved);
+        }
+    } catch (e) {
+        chatSessions = {};
+    }
+
+    const sessionKeys = Object.keys(chatSessions);
+    const savedActiveId = localStorage.getItem('rey_active_session_id');
+
+    if (savedActiveId && chatSessions[savedActiveId]) {
+        activeSessionId = savedActiveId;
+    } else if (sessionKeys.length > 0) {
+        sessionKeys.sort((a, b) => (chatSessions[b].updatedAt || 0) - (chatSessions[a].updatedAt || 0));
+        activeSessionId = sessionKeys[0];
+    } else {
+        createNewChatSession(false);
+    }
+
+    renderSessionList();
+    renderCurrentSessionMessages();
+}
+
+function saveSessionsToStorage() {
+    try {
+        localStorage.setItem('rey_chat_sessions', JSON.stringify(chatSessions));
+        if (activeSessionId) {
+            localStorage.setItem('rey_active_session_id', activeSessionId);
+        }
+    } catch (e) {
+        console.warn('Gagal menyimpan sesi:', e);
+    }
+}
+
+function createNewChatSession(shouldRender = true) {
+    const newId = 'session_' + Date.now();
+    chatSessions[newId] = {
+        id: newId,
+        title: 'Obrolan Baru',
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+    activeSessionId = newId;
+
+    if (shouldRender) {
+        saveSessionsToStorage();
+        renderSessionList();
+        renderCurrentSessionMessages();
+        closeSidebar();
+        playSfx('click');
+        const promptInput = document.getElementById('promptInput');
+        if (promptInput) promptInput.focus();
+    }
+}
+
+function switchSession(sessionId) {
+    if (chatSessions[sessionId]) {
+        activeSessionId = sessionId;
+        saveSessionsToStorage();
+        renderSessionList();
+        renderCurrentSessionMessages();
+        closeSidebar();
+        playSfx('click');
+    }
+}
+
+function deleteSession(sessionId, event) {
+    if (event) event.stopPropagation();
+    if (!confirm("Hapus obrolan ini dari riwayat?")) return;
+
+    delete chatSessions[sessionId];
+    const keys = Object.keys(chatSessions);
+
+    if (activeSessionId === sessionId) {
+        if (keys.length > 0) {
+            keys.sort((a, b) => (chatSessions[b].updatedAt || 0) - (chatSessions[a].updatedAt || 0));
+            activeSessionId = keys[0];
+        } else {
+            createNewChatSession(false);
+        }
+    }
+
+    saveSessionsToStorage();
+    renderSessionList();
+    renderCurrentSessionMessages();
+    playSfx('click');
+}
+
+function clearAllSessions() {
+    if (!confirm("Apakah Anda yakin ingin menghapus seluruh riwayat obrolan?")) return;
+    chatSessions = {};
+    createNewChatSession(false);
+    saveSessionsToStorage();
+    renderSessionList();
+    renderCurrentSessionMessages();
+    playSfx('click');
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (!sidebar || !backdrop) return;
+    
+    const isOpen = sidebar.classList.contains('active');
+    if (isOpen) {
+        sidebar.classList.remove('active');
+        backdrop.classList.remove('active');
+    } else {
+        sidebar.classList.add('active');
+        backdrop.classList.add('active');
+    }
+    playSfx('click');
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) sidebar.classList.remove('active');
+    if (backdrop) backdrop.classList.remove('active');
+}
+
+function renderSessionList() {
+    const listContainer = document.getElementById('sessionList');
+    if (!listContainer) return;
+
+    const sessionKeys = Object.keys(chatSessions);
+    if (sessionKeys.length === 0) {
+        listContainer.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-dim); font-size: 12px;">Belum ada riwayat obrolan</div>`;
+        return;
+    }
+
+    sessionKeys.sort((a, b) => (chatSessions[b].updatedAt || 0) - (chatSessions[a].updatedAt || 0));
+
+    let html = '';
+    for (const id of sessionKeys) {
+        const s = chatSessions[id];
+        const isActive = id === activeSessionId ? 'active' : '';
+        const title = escapeHtml(s.title || 'Obrolan Baru');
+        html += `
+            <div class="session-item ${isActive}" onclick="switchSession('${id}')">
+                <i class="fa-regular fa-message session-icon"></i>
+                <span class="session-title">${title}</span>
+                <button class="session-delete-btn" onclick="deleteSession('${id}', event)" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+        `;
+    }
+    listContainer.innerHTML = html;
+}
+
+function renderCurrentSessionMessages() {
+    const chatHistory = document.getElementById('chatHistory');
+    const titleElem = document.getElementById('headerChatTitle');
+    if (!chatHistory) return;
+
+    const curr = chatSessions[activeSessionId];
+    if (titleElem) {
+        titleElem.innerText = curr && curr.title ? curr.title : 'Rey Multi AI Hub';
+    }
+
+    if (!curr || !curr.messages || curr.messages.length === 0) {
+        chatHistory.innerHTML = `
+            <div class="chat-bubble ai">
+                <div class="avatar"><i class="fa-solid fa-bolt"></i></div>
+                <div class="bubble-content">
+                    <strong>Rey Multi AI Hub Turbo ⚡</strong><br>
+                    Akses berbagai AI terbaik dunia: <strong>ChatGPT, DeepSeek R1, Claude, Gemini, Qwen Coder, Llama</strong>. Silakan tanyakan apa saja atau unggah foto/PDF untuk pemindaian instan!
+                </div>
+            </div>`;
+        return;
+    }
+
+    let html = '';
+    for (const m of curr.messages) {
+        if (m.role === 'user') {
+            html += `
+                <div class="chat-bubble user">
+                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="bubble-content">${m.content}</div>
+                </div>`;
+        } else {
+            const parsed = marked.parse(m.content);
+            html += `
+                <div class="chat-bubble ${isVipUser ? 'ai vip' : 'ai'}">
+                    <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                    <div class="bubble-content">${parsed}${getActionButtonsHTML()}</div>
+                </div>`;
+        }
+    }
+
+    chatHistory.innerHTML = html;
+    renderMath(chatHistory);
+    enhanceCodeBlocks(chatHistory);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+// ==========================================
+// 2. LIVE CODE PREVIEW & ARTIFACTS RUNNER
+// ==========================================
+
+function enhanceCodeBlocks(container) {
+    if (!container) return;
+    const preBlocks = container.querySelectorAll('pre');
+    preBlocks.forEach(pre => {
+        if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrapper')) return;
+
+        const code = pre.querySelector('code');
+        let lang = 'code';
+        if (code) {
+            const classList = Array.from(code.classList);
+            for (const cls of classList) {
+                if (cls.startsWith('language-')) {
+                    lang = cls.replace('language-', '').toLowerCase();
+                    break;
+                }
+            }
+        }
+
+        const isRunnable = ['html', 'htm', 'javascript', 'js', 'css', 'svg', 'xml'].includes(lang);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+
+        const header = document.createElement('div');
+        header.className = 'code-block-header';
+
+        let runBtnHtml = '';
+        if (isRunnable) {
+            runBtnHtml = `<button class="code-action-btn code-run-btn" onclick="openLivePreviewFromCode(this)" title="Jalankan & Pratinjau Kode"><i class="fa-solid fa-play"></i> Pratinjau</button>`;
+        }
+
+        header.innerHTML = `
+            <div class="code-lang-label"><i class="fa-solid fa-code"></i> ${escapeHtml(lang.toUpperCase())}</div>
+            <div class="code-header-actions">
+                ${runBtnHtml}
+                <button class="code-action-btn" onclick="copyCodeBlockText(this)"><i class="fa-regular fa-copy"></i> Salin</button>
+            </div>
+        `;
+
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(header);
+        wrapper.appendChild(pre);
+    });
+}
+
+function copyCodeBlockText(btn) {
+    const wrapper = btn.closest('.code-block-wrapper');
+    if (!wrapper) return;
+    const codeElem = wrapper.querySelector('pre code') || wrapper.querySelector('pre');
+    if (!codeElem) return;
+
+    navigator.clipboard.writeText(codeElem.innerText).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
+        playSfx('click');
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    });
+}
+
+function openLivePreviewFromCode(btn) {
+    const wrapper = btn.closest('.code-block-wrapper');
+    if (!wrapper) return;
+    const codeElem = wrapper.querySelector('pre code') || wrapper.querySelector('pre');
+    if (!codeElem) return;
+    openLivePreviewWithContent(codeElem.innerText);
+}
+
+function openLivePreviewWithContent(rawCode) {
+    currentPreviewCode = rawCode;
+    const modal = document.getElementById('codePreviewModal');
+    const iframe = document.getElementById('previewIframe');
+    if (!modal || !iframe) return;
+
+    let finalHtml = rawCode;
+    const lower = rawCode.toLowerCase();
+    if (!lower.includes('<!doctype') && !lower.includes('<html')) {
+        finalHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview - Rey AI Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 16px; background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+</head>
+<body>
+    ${rawCode}
+</body>
+</html>`;
+    }
+
+    iframe.srcdoc = finalHtml;
+    modal.style.display = 'flex';
+    playSfx('click');
+}
+
+function closeCodePreview() {
+    const modal = document.getElementById('codePreviewModal');
+    const iframe = document.getElementById('previewIframe');
+    if (modal) modal.style.display = 'none';
+    if (iframe) iframe.srcdoc = '';
+    playSfx('click');
+}
+
+function refreshCodePreview() {
+    if (currentPreviewCode) {
+        openLivePreviewWithContent(currentPreviewCode);
+    }
+}
+
+function openPreviewNewTab() {
+    const iframe = document.getElementById('previewIframe');
+    const content = iframe && iframe.srcdoc ? iframe.srcdoc : currentPreviewCode;
+    if (!content) return;
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+}
+
+// ==========================================
+// 3. PROFIL PENGGUNA & CUSTOM INSTRUCTIONS
+// ==========================================
+
+function openCustomSettings() {
+    const modal = document.getElementById('customSettingsModal');
+    if (!modal) return;
+
+    const nameInput = document.getElementById('customUserName');
+    const roleInput = document.getElementById('customUserRole');
+    const rulesInput = document.getElementById('customUserRules');
+
+    if (nameInput) nameInput.value = localStorage.getItem('rey_user_name') || '';
+    if (roleInput) roleInput.value = localStorage.getItem('rey_user_role') || '';
+    if (rulesInput) rulesInput.value = localStorage.getItem('rey_user_rules') || '';
+
+    modal.style.display = 'flex';
+    playSfx('click');
+}
+
+function closeCustomSettings() {
+    const modal = document.getElementById('customSettingsModal');
+    if (modal) modal.style.display = 'none';
+    playSfx('click');
+}
+
+function saveCustomSettings() {
+    const name = (document.getElementById('customUserName')?.value || '').trim();
+    const role = (document.getElementById('customUserRole')?.value || '').trim();
+    const rules = (document.getElementById('customUserRules')?.value || '').trim();
+
+    localStorage.setItem('rey_user_name', name);
+    localStorage.setItem('rey_user_role', role);
+    localStorage.setItem('rey_user_rules', rules);
+
+    playSfx('receive');
+    alert("Preferensi profil & aturan kustom AI berhasil disimpan! AI akan menyesuaikan gaya jawaban dengan profil Anda.");
+    closeCustomSettings();
+}
+
 
