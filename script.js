@@ -37,7 +37,7 @@ if (window.visualViewport) {
 // REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP) DENGAN AUTO-UPDATE
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=4.0')
+        navigator.serviceWorker.register('sw.js?v=4.1')
             .then((reg) => {
                 if (reg) reg.update();
             })
@@ -780,7 +780,9 @@ async function streamAIResponse(promptText, selectedModel, targetContainer, disp
 
     // SPESIALISASI PROMPT BERDASARKAN PILIHAN MODEL
     let modelSpecialization = "";
-    if (selectedModel === 'qwen-coder') {
+    if (selectedModel === 'gemini-4-argon') {
+        modelSpecialization = "FOKUS FLAGSHIP REASONING (GEMINI 4 ARGON DEEP THINK): Kamu beroperasi sebagai model reasoning kelas dunia Gemini 4 Argon. Lakukan penalaran logika multi-langkah mendalam, ketepatan analisis tingkat tinggi, dan berikan solusi komprehensif yang rapi dan terstruktur.";
+    } else if (selectedModel === 'qwen-coder') {
         modelSpecialization = "FOKUS SPESIALIS KODING: Berikan kode yang efisien, bersih, berikan penjelasan baris per baris, dan tangani error handling dengan baik.";
     } else if (selectedModel === 'deepseek') {
         modelSpecialization = "FOKUS SPESIALIS ANALITIK & SAINS: Lakukan penalaran logika mendalam, pemecahan masalah sistematis, dan pembuktian langkah terstruktur.";
@@ -858,11 +860,17 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
     ];
 
     // TENTUKAN MESIN API (BYOK - GROQ / GEMINI / POLLINATIONS)
-    const activeProvider = localStorage.getItem('rey_api_provider') || 'groq';
+    let activeProvider = localStorage.getItem('rey_api_provider') || 'groq';
     const groqKey = localStorage.getItem('rey_groq_key') || (activeProvider === 'groq' ? DEFAULT_GROQ_KEY : '');
-    const geminiKey = localStorage.getItem('rey_gemini_key') || (activeProvider === 'gemini' ? DEFAULT_GEMINI_KEY : '');
+    const geminiKey = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
     const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
-    const geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+    let geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+
+    // Jika pengguna secara spesifik memilih Gemini 4 Argon dari dropdown model atas
+    if (selectedModel === 'gemini-4-argon') {
+        activeProvider = 'gemini';
+        geminiModel = 'gemini-4-argon';
+    }
 
     let apiUrl = "https://text.pollinations.ai/";
     let apiHeaders = { "Content-Type": "application/json" };
@@ -915,12 +923,27 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
     }
 
     try {
-        const response = await fetch(apiUrl, {
+        let response = await fetch(apiUrl, {
             method: "POST",
             headers: apiHeaders,
             body: apiBody,
             signal: controller.signal
         });
+
+        // Jika gemini-4-argon terkena limit kuota akun gratis, alihkan otomatis ke gemini-flash-latest
+        if (!response.ok && geminiModel === 'gemini-4-argon' && activeProvider === 'gemini') {
+            console.log("Gemini 4 Argon kuota limit, beralih otomatis ke Gemini Flash...");
+            const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse&key=${geminiKey}`;
+            const retryRes = await fetch(fallbackUrl, {
+                method: "POST",
+                headers: apiHeaders,
+                body: apiBody,
+                signal: controller.signal
+            });
+            if (retryRes && retryRes.ok) {
+                response = retryRes;
+            }
+        }
 
         clearTimeout(timeoutId);
 
@@ -1284,6 +1307,22 @@ async function callToolApi(systemPrompt, userPrompt) {
                 const data = await resp.json();
                 const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (content && content.trim()) return content.trim();
+            } else if (geminiModel === 'gemini-4-argon') {
+                const fb = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                        generationConfig: { temperature: 0.7 }
+                    }),
+                    signal: controller.signal
+                });
+                if (fb.ok) {
+                    const data = await fb.json();
+                    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (content && content.trim()) return content.trim();
+                }
             }
         } catch (e) {
             console.warn("Gemini Tool fail, beralih...", e);
@@ -2068,10 +2107,16 @@ async function testGeminiConnection() {
         const duration = Date.now() - start;
         if (resp.ok) {
             playSfx('receive');
-            showKeyFeedback('geminiTestFeedback', `✅ <strong>Koneksi Sukses!</strong> Terhubung ke Google Gemini dalam <strong>${duration}ms</strong> via <code>${model}</code>.`, 'success');
+            const isArgon = model === 'gemini-4-argon';
+            const extra = isArgon ? ' (Flagship 4 Argon Aktif! 🧬)' : '';
+            showKeyFeedback('geminiTestFeedback', `✅ <strong>Koneksi Sukses!</strong> Terhubung ke Google Gemini dalam <strong>${duration}ms</strong> via <code>${model}</code>${extra}.`, 'success');
         } else {
             const err = await resp.json().catch(() => ({}));
-            showKeyFeedback('geminiTestFeedback', `❌ Gagal (${resp.status}): ${err?.error?.message || 'Kunci Gemini tidak valid.'}`, 'error');
+            if (model === 'gemini-4-argon' && resp.status === 429) {
+                showKeyFeedback('geminiTestFeedback', `ℹ️ <strong>Model Gemini 4 Argon terdaftar aktif!</strong> Namun model ini adalah flagship berbayar yang memerlukan billing di Google AI Studio (kuota gratis 0). Sistem Rey AI akan otomatis mengalihkan permintaan ke <code>gemini-flash-latest</code> jika kuota 4 Argon habis.`, 'success');
+            } else {
+                showKeyFeedback('geminiTestFeedback', `❌ Gagal (${resp.status}): ${err?.error?.message || 'Kunci Gemini tidak valid.'}`, 'error');
+            }
         }
     } catch (e) {
         showKeyFeedback('geminiTestFeedback', `❌ Error koneksi: ${e.message}`, 'error');
@@ -2115,8 +2160,11 @@ function updateEngineStatusUI() {
     let bannerClass = "engine-status-banner engine-groq";
 
     if (provider === 'gemini') {
-        label = `© Rey472 • ✨ Gemini Flash`;
-        bannerDesc = `Mesin Aktif: ✨ Google Gemini (${geminiModel}) - Penalaran & Vision`;
+        const isArgon = geminiModel === 'gemini-4-argon';
+        label = isArgon ? `© Rey472 • 🧬 Gemini 4 Argon` : `© Rey472 • ✨ Gemini Flash`;
+        bannerDesc = isArgon 
+            ? `Mesin Aktif: 🧬 Google Gemini (gemini-4-argon) - Flagship Deep Reasoning & 1M Context`
+            : `Mesin Aktif: ✨ Google Gemini (${geminiModel}) - Penalaran & Vision`;
         bannerClass = "engine-status-banner engine-gemini";
     } else if (provider === 'default' || (!groqKey && !geminiKey)) {
         label = `© Rey472 • 🌐 Multi AI Bebas`;
