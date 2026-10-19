@@ -37,7 +37,7 @@ if (window.visualViewport) {
 // REGISTRASI SERVICE WORKER UNTUK PWA (INSTALL HP) DENGAN AUTO-UPDATE
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=4.1')
+        navigator.serviceWorker.register('sw.js?v=4.2')
             .then((reg) => {
                 if (reg) reg.update();
             })
