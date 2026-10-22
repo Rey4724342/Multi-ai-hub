@@ -24,7 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4.2">
+    <link rel="stylesheet" href="style.css?v=4.3">
 </head>
 <body>
 
@@ -135,6 +135,7 @@
                     <optgroup label="🌟 Model Utama & Flagship">
                         <option value="openai" selected>⚡ ChatGPT</option>
                         <option value="gemini-4-argon">🧬 Gemini 4 Argon</option>
+                        <option value="cohere-command-r">🔮 Cohere Command R</option>
                         <option value="deepseek">🧠 DeepSeek R1</option>
                         <option value="claude">✍️ Claude 3.5</option>
                         <option value="gemini">✨ Gemini Flash</option>
@@ -503,6 +504,7 @@
                         <select id="apiProviderSelect" class="tool-select" style="max-width: 100%; width: 100%;" onchange="onApiProviderChanged()">
                             <option value="groq" selected>⚡ Groq Cloud (Ultra Cepat ~0.5s - Respon Kilat)</option>
                             <option value="gemini">✨ Google Gemini (Penalaran Mendalam & Multimodal)</option>
+                            <option value="cohere">🔮 Cohere Cloud (Command R & R+ Pintar)</option>
                             <option value="default">🌐 Bebas (Pollinations Hub - Gratis Tanpa Key)</option>
                         </select>
                     </div>
@@ -563,6 +565,35 @@
                         <div id="geminiTestFeedback" class="test-feedback-box" style="display: none;"></div>
                     </div>
 
+                    <!-- Form Cohere -->
+                    <div id="cohereFormArea" class="provider-box" style="display: none;">
+                        <div class="provider-header">
+                            <i class="fa-solid fa-brain" style="color: #ec4899;"></i>
+                            <span>Konfigurasi Cohere AI (Command R & R+)</span>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Model Cohere:</label>
+                            <select id="cohereModelSelect" class="tool-select" style="max-width: 100%; width: 100%;">
+                                <option value="command-r-08-2024" selected>🔮 command-r-08-2024 (Pintar & Cepat)</option>
+                                <option value="command-r-plus-08-2024">👑 command-r-plus-08-2024 (Flagship Reasoning)</option>
+                                <option value="command-r7b-12-2024">⚡ command-r7b-12-2024 (Mode Ringan Kilat)</option>
+                                <option value="c4ai-aya-expanse-32b">🌍 c4ai-aya-expanse-32b (Multilingual)</option>
+                            </select>
+                        </div>
+                        <div class="tool-row" style="flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 8px;">
+                            <label>Cohere API Key:</label>
+                            <div class="key-input-container">
+                                <input type="password" id="cohereApiKeyInput" class="tool-input key-input" placeholder="Masukkan Cohere API Key..." />
+                                <button type="button" class="key-eye-btn" onclick="toggleKeyVisibility('cohereApiKeyInput', this)"><i class="fa-solid fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="key-action-buttons">
+                            <button type="button" class="key-mini-btn" onclick="applyDefaultCohereKey()"><i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Key Cohere Rey</button>
+                            <button type="button" class="key-mini-btn test-btn" id="btnTestCohere" onclick="testCohereConnection()"><i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Cohere</button>
+                        </div>
+                        <div id="cohereTestFeedback" class="test-feedback-box" style="display: none;"></div>
+                    </div>
+
                     <!-- Free Pollinations Info -->
                     <div id="defaultFormArea" class="provider-box" style="display: none;">
                         <div class="provider-header">
@@ -600,6 +631,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=4.2"></script>
+    <script src="script.js?v=4.3"></script>
 </body>
 </html>
