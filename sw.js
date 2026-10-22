@@ -1,10 +1,10 @@
 // Rey Multi AI Hub - Service Worker Turbo (Auto-Update & Network First)
-const CACHE_NAME = 'reymulti-cache-v8';
+const CACHE_NAME = 'reymulti-cache-v9';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=4.3',
-  './script.js?v=4.3',
+  './style.css?v=4.4',
+  './script.js?v=4.4',
   './1791994468675.jpg',
   './manifest.json'
 ];
