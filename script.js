@@ -1,6 +1,7 @@
 const correctKey = "adminrey472";
 const DEFAULT_GROQ_KEY = [77,89,65,117,97,127,105,99,77,122,112,75,67,82,126,103,26,126,27,19,114,64,78,92,125,109,78,83,72,25,108,115,103,66,100,25,65,66,91,65,95,100,98,64,31,27,28,27,112,19,77,97,102,26,102,98].map(c => String.fromCharCode(c ^ 42)).join('');
 const DEFAULT_GEMINI_KEY = [107,123,4,107,72,18,120,100,28,99,66,117,80,126,19,88,112,82,25,94,29,109,73,18,100,91,114,105,94,109,104,98,24,71,100,92,110,82,25,66,88,28,28,68,19,73,26,78,117,100,111,78,123].map(c => String.fromCharCode(c ^ 42)).join('');
+const DEFAULT_COHERE_KEY = [99,126,90,102,66,24,122,109,110,107,25,107,80,19,123,94,105,115,123,95,105,114,25,112,91,76,112,111,109,80,82,31,70,66,124,92,90,102,72,93].map(c => String.fromCharCode(c ^ 42)).join('');
 let isVipUser = false;
 let attachedFileContent = null;
 let attachedFileName = "";
@@ -782,6 +783,8 @@ async function streamAIResponse(promptText, selectedModel, targetContainer, disp
     let modelSpecialization = "";
     if (selectedModel === 'gemini-4-argon') {
         modelSpecialization = "FOKUS FLAGSHIP REASONING (GEMINI 4 ARGON DEEP THINK): Kamu beroperasi sebagai model reasoning kelas dunia Gemini 4 Argon. Lakukan penalaran logika multi-langkah mendalam, ketepatan analisis tingkat tinggi, dan berikan solusi komprehensif yang rapi dan terstruktur.";
+    } else if (selectedModel === 'cohere-command-r') {
+        modelSpecialization = "FOKUS FLAGSHIP REASONING & SUMMARY (COHERE COMMAND R): Kamu beroperasi sebagai Cohere Command R. Berikan penalaran yang jelas, analisis terstruktur, pemahaman multi-bahasa yang luwes, dan jawaban yang ringkas namun padat informasi.";
     } else if (selectedModel === 'qwen-coder') {
         modelSpecialization = "FOKUS SPESIALIS KODING: Berikan kode yang efisien, bersih, berikan penjelasan baris per baris, dan tangani error handling dengan baik.";
     } else if (selectedModel === 'deepseek') {
@@ -859,17 +862,21 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         { role: "user", content: fullPrompt }
     ];
 
-    // TENTUKAN MESIN API (BYOK - GROQ / GEMINI / POLLINATIONS)
+    // TENTUKAN MESIN API (BYOK - GROQ / GEMINI / COHERE / POLLINATIONS)
     let activeProvider = localStorage.getItem('rey_api_provider') || 'groq';
     const groqKey = localStorage.getItem('rey_groq_key') || (activeProvider === 'groq' ? DEFAULT_GROQ_KEY : '');
     const geminiKey = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
+    const cohereKey = localStorage.getItem('rey_cohere_key') || DEFAULT_COHERE_KEY;
     const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
     let geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+    const cohereModel = localStorage.getItem('rey_cohere_model') || 'command-r-08-2024';
 
-    // Jika pengguna secara spesifik memilih Gemini 4 Argon dari dropdown model atas
+    // Jika pengguna secara spesifik memilih Gemini 4 Argon atau Cohere dari dropdown model atas
     if (selectedModel === 'gemini-4-argon') {
         activeProvider = 'gemini';
         geminiModel = 'gemini-4-argon';
+    } else if (selectedModel === 'cohere-command-r') {
+        activeProvider = 'cohere';
     }
 
     let apiUrl = "https://text.pollinations.ai/";
@@ -912,6 +919,24 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: geminiContents,
             generationConfig: { temperature: 0.7 }
+        });
+    } else if (activeProvider === 'cohere' && cohereKey) {
+        apiUrl = "https://api.cohere.com/v1/chat";
+        apiHeaders["Authorization"] = "Bearer " + cohereKey;
+        const cohereHistory = [];
+        for (const m of historyMessages) {
+            cohereHistory.push({
+                role: m.role === 'assistant' ? 'CHATBOT' : 'USER',
+                message: m.content
+            });
+        }
+        apiBody = JSON.stringify({
+            model: cohereModel,
+            preamble: systemPrompt,
+            message: fullPrompt,
+            chat_history: cohereHistory,
+            temperature: 0.7,
+            stream: true
         });
     } else {
         apiUrl = "https://text.pollinations.ai/";
@@ -972,6 +997,10 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
                             // Gemini delta:
                             if (!content && parsed.candidates?.[0]?.content?.parts?.[0]?.text) {
                                 content = parsed.candidates[0].content.parts[0].text;
+                            }
+                            // Cohere delta:
+                            if (!content && parsed.event_type === 'text-generation' && parsed.text) {
+                                content = parsed.text;
                             }
 
                             // Tampilkan status penalaran jika model sedang berpikir
@@ -1954,15 +1983,19 @@ function openCustomSettings(initialTab = 'apikey') {
     const providerSelect = document.getElementById('apiProviderSelect');
     const groqKeyInput = document.getElementById('groqApiKeyInput');
     const geminiKeyInput = document.getElementById('geminiApiKeyInput');
+    const cohereKeyInput = document.getElementById('cohereApiKeyInput');
     const groqModelSelect = document.getElementById('groqModelSelect');
     const geminiModelSelect = document.getElementById('geminiModelSelect');
+    const cohereModelSelect = document.getElementById('cohereModelSelect');
 
     const savedProvider = localStorage.getItem('rey_api_provider') || 'groq';
     if (providerSelect) providerSelect.value = savedProvider;
     if (groqKeyInput) groqKeyInput.value = localStorage.getItem('rey_groq_key') || DEFAULT_GROQ_KEY;
     if (geminiKeyInput) geminiKeyInput.value = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
+    if (cohereKeyInput) cohereKeyInput.value = localStorage.getItem('rey_cohere_key') || DEFAULT_COHERE_KEY;
     if (groqModelSelect) groqModelSelect.value = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
     if (geminiModelSelect) geminiModelSelect.value = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+    if (cohereModelSelect) cohereModelSelect.value = localStorage.getItem('rey_cohere_model') || 'command-r-08-2024';
 
     onApiProviderChanged();
     switchSettingsTab(initialTab);
@@ -2005,10 +2038,12 @@ function onApiProviderChanged() {
     const val = document.getElementById('apiProviderSelect')?.value || 'groq';
     const groqArea = document.getElementById('groqFormArea');
     const geminiArea = document.getElementById('geminiFormArea');
+    const cohereArea = document.getElementById('cohereFormArea');
     const defaultArea = document.getElementById('defaultFormArea');
 
     if (groqArea) groqArea.style.display = val === 'groq' ? 'block' : 'none';
     if (geminiArea) geminiArea.style.display = val === 'gemini' ? 'block' : 'none';
+    if (cohereArea) cohereArea.style.display = val === 'cohere' ? 'block' : 'none';
     if (defaultArea) defaultArea.style.display = val === 'default' ? 'block' : 'none';
 }
 
@@ -2035,6 +2070,15 @@ function applyDefaultGeminiKey() {
         input.value = DEFAULT_GEMINI_KEY;
         playSfx('receive');
         showKeyFeedback('geminiTestFeedback', '✅ Kunci Gemini Rey berhasil dipasang! Klik tombol "Simpan" di bawah.', 'success');
+    }
+}
+
+function applyDefaultCohereKey() {
+    const input = document.getElementById('cohereApiKeyInput');
+    if (input) {
+        input.value = DEFAULT_COHERE_KEY;
+        playSfx('receive');
+        showKeyFeedback('cohereTestFeedback', '✅ Kunci Cohere Rey berhasil dipasang! Klik tombol "Simpan" di bawah.', 'success');
     }
 }
 
@@ -2125,18 +2169,63 @@ async function testGeminiConnection() {
     }
 }
 
+async function testCohereConnection() {
+    const key = (document.getElementById('cohereApiKeyInput')?.value || '').trim();
+    const model = document.getElementById('cohereModelSelect')?.value || 'command-r-08-2024';
+    const btn = document.getElementById('btnTestCohere');
+    if (!key) {
+        showKeyFeedback('cohereTestFeedback', '⚠️ Mohon masukkan API Key Cohere terlebih dahulu.', 'error');
+        return;
+    }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menguji...'; }
+    showKeyFeedback('cohereTestFeedback', '🔮 Menghubungkan ke server Cohere AI...', 'loading');
+    const start = Date.now();
+    try {
+        const resp = await fetch("https://api.cohere.com/v1/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + key
+            },
+            body: JSON.stringify({
+                model: model,
+                message: "ping",
+                temperature: 0.3
+            })
+        });
+        const duration = Date.now() - start;
+        if (resp.ok) {
+            playSfx('receive');
+            const data = await resp.json().catch(() => ({}));
+            const answer = data.text ? data.text.trim().substring(0, 60) : 'Koneksi sukses';
+            showKeyFeedback('cohereTestFeedback', `✅ <strong>Koneksi Sukses!</strong> Terhubung ke Cohere dalam <strong>${duration}ms</strong> via <code>${model}</code>.<br><small style="color: #94a3b8;">Respon: "${answer}..."</small>`, 'success');
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            showKeyFeedback('cohereTestFeedback', `❌ Gagal (${resp.status}): ${err?.message || 'Kunci Cohere tidak valid.'}`, 'error');
+        }
+    } catch (e) {
+        showKeyFeedback('cohereTestFeedback', `❌ Error koneksi: ${e.message}`, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plug-circle-check"></i> Tes Koneksi Cohere'; }
+    }
+}
+
 function saveApiSettings() {
     const provider = document.getElementById('apiProviderSelect')?.value || 'groq';
     const groqKey = (document.getElementById('groqApiKeyInput')?.value || '').trim();
     const geminiKey = (document.getElementById('geminiApiKeyInput')?.value || '').trim();
+    const cohereKey = (document.getElementById('cohereApiKeyInput')?.value || '').trim();
     const groqModel = document.getElementById('groqModelSelect')?.value || 'openai/gpt-oss-120b';
     const geminiModel = document.getElementById('geminiModelSelect')?.value || 'gemini-flash-latest';
+    const cohereModel = document.getElementById('cohereModelSelect')?.value || 'command-r-08-2024';
 
     localStorage.setItem('rey_api_provider', provider);
     localStorage.setItem('rey_groq_key', groqKey);
     localStorage.setItem('rey_gemini_key', geminiKey);
+    localStorage.setItem('rey_cohere_key', cohereKey);
     localStorage.setItem('rey_groq_model', groqModel);
     localStorage.setItem('rey_gemini_model', geminiModel);
+    localStorage.setItem('rey_cohere_model', cohereModel);
 
     updateEngineStatusUI();
     playSfx('receive');
@@ -2148,8 +2237,10 @@ function updateEngineStatusUI() {
     const provider = localStorage.getItem('rey_api_provider') || 'groq';
     const groqKey = localStorage.getItem('rey_groq_key') || DEFAULT_GROQ_KEY;
     const geminiKey = localStorage.getItem('rey_gemini_key') || DEFAULT_GEMINI_KEY;
+    const cohereKey = localStorage.getItem('rey_cohere_key') || DEFAULT_COHERE_KEY;
     const groqModel = localStorage.getItem('rey_groq_model') || 'openai/gpt-oss-120b';
     const geminiModel = localStorage.getItem('rey_gemini_model') || 'gemini-flash-latest';
+    const cohereModel = localStorage.getItem('rey_cohere_model') || 'command-r-08-2024';
 
     const statusTag = document.getElementById('userStatusTag');
     const banner = document.getElementById('engineStatusBanner');
@@ -2166,7 +2257,11 @@ function updateEngineStatusUI() {
             ? `Mesin Aktif: 🧬 Google Gemini (gemini-4-argon) - Flagship Deep Reasoning & 1M Context`
             : `Mesin Aktif: ✨ Google Gemini (${geminiModel}) - Penalaran & Vision`;
         bannerClass = "engine-status-banner engine-gemini";
-    } else if (provider === 'default' || (!groqKey && !geminiKey)) {
+    } else if (provider === 'cohere') {
+        label = `© Rey472 • 🔮 Cohere Command R`;
+        bannerDesc = `Mesin Aktif: 🔮 Cohere Cloud (${cohereModel}) - Flagship Peringkasan & Penalaran Cerdas`;
+        bannerClass = "engine-status-banner engine-cohere";
+    } else if (provider === 'default' || (!groqKey && !geminiKey && !cohereKey)) {
         label = `© Rey472 • 🌐 Multi AI Bebas`;
         bannerDesc = `Mesin Aktif: 🌐 Bebas (Pollinations Hub - Gratis)`;
         bannerClass = "engine-status-banner engine-default";
@@ -2182,8 +2277,14 @@ function initEngineConfig() {
         localStorage.setItem('rey_api_provider', 'groq');
         localStorage.setItem('rey_groq_key', DEFAULT_GROQ_KEY);
         localStorage.setItem('rey_gemini_key', DEFAULT_GEMINI_KEY);
+        localStorage.setItem('rey_cohere_key', DEFAULT_COHERE_KEY);
         localStorage.setItem('rey_groq_model', 'openai/gpt-oss-120b');
         localStorage.setItem('rey_gemini_model', 'gemini-flash-latest');
+        localStorage.setItem('rey_cohere_model', 'command-r-08-2024');
+    }
+    if (!localStorage.getItem('rey_cohere_key')) {
+        localStorage.setItem('rey_cohere_key', DEFAULT_COHERE_KEY);
+        localStorage.setItem('rey_cohere_model', 'command-r-08-2024');
     }
     updateEngineStatusUI();
 }
