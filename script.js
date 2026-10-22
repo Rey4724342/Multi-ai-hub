@@ -819,7 +819,8 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
 2. STRUKTUR RAPI & JELAS: Gunakan paragraf-paragraf yang tidak terlalu panjang, gunakan penomoran (1, 2, 3) atau poin (-) untuk menjabarkan poin penting agar pembaca mudah memahami.
 3. LANGSUNG KE JAWABAN: Dilarang keras menampilkan proses berpikir internal, tag <think>, atau teks percakapan sistem. Berikan langsung jawaban yang bersih dan tuntas.
 4. RUMUS & MATEMATIKA: Tulis rumus matematika dengan rapi menggunakan format KaTeX ($ ... $ untuk inline atau $$ ... $$ untuk blok baris). Hindari simbol unicode aneh yang bisa rusak.
-5. AKURASI & LOGIKA: Berikan informasi yang valid, terpercaya, dan masuk akal. Jangan mengarang hal yang tidak diketahui.`;
+5. AKURASI & LOGIKA: Berikan informasi yang valid, terpercaya, dan masuk akal. Jangan mengarang hal yang tidak diketahui.
+6. KERAJINAN TANGAN & KREATIF (DIY): Untuk pertanyaan seputar kerajinan tangan, prakarya, kesenian, atau mainan (seperti membuat pedang mainan dari kardus/kertas, origami, miniatur, properti panggung/cosplay), SELALU berikan panduan langkah-demi-langkah yang lengkap, kreatif, dan aman menggunakan bahan rumah tangga (kardus, kertas, lem, selotip). Jangan menolak pertanyaan prakarya atau mainan aman!`;
 
     targetContainer.innerHTML = `<div class="live-stream-box" style="white-space: pre-wrap; font-family: inherit; line-height: 1.65;"><span style="color: var(--accent);"><i class="fa-solid fa-brain fa-fade"></i> AI sedang menganalisis dan menyusun jawaban rapi...</span></div>`;
     const streamBox = targetContainer.querySelector('.live-stream-box');
@@ -918,7 +919,13 @@ PEDOMAN FORMAT PENULISAN WAJIB (AGAR RAPI & ENAK DIBACA):
         apiBody = JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: geminiContents,
-            generationConfig: { temperature: 0.7 }
+            generationConfig: { temperature: 0.7 },
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }
+            ]
         });
     } else if (activeProvider === 'cohere' && cohereKey) {
         apiUrl = "https://api.cohere.com/v1/chat";
